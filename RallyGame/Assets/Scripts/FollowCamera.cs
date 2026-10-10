@@ -3,7 +3,7 @@ using UnityEngine;
 // Chase camera that stays behind the car.
 // Attach to the Main Camera (NOT as a child of the car) and drag the car into "Target".
 [RequireComponent(typeof(Camera))]
-public class FollowCamera : MonoBehaviour
+public class CameraScripz : MonoBehaviour
 {
     [SerializeField] private Transform target;
 

@@ -32,6 +32,7 @@ Material:
     - _DstBlendAlpha: 0
     - _Metallic: 0
     - _Surface: 0
+    - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.052928496, g: 0.9245283, b: 0, a: 1}
