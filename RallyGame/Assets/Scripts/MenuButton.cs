@@ -175,7 +175,7 @@ public class SketchButton : MonoBehaviour, IPointerClickHandler
         if (!Application.isPlaying) return;
 
 #if UNITY_2023_1_OR_NEWER
-        if (FindFirstObjectByType<EventSystem>() != null) return;
+        if (FindAnyObjectByType<EventSystem>() != null) return;
 #else
         if (FindObjectOfType<EventSystem>() != null) return;
 #endif
