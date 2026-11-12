@@ -55,7 +55,10 @@ public class PaceNoteHUD : MonoBehaviour
             return;
         }
 
+        // Guard against empty / zero values in the Inspector, which would stack or hide every tile
+        if (direction.sqrMagnitude < 0.0001f) direction = Vector2.right;
         direction = direction.normalized;
+        if (slotScales == null || slotScales.Length == 0) slotScales = new float[] { 1f, 0.75f, 0.5f };
 
         // Draw on top of the other UI under the same Canvas
         transform.SetAsLastSibling();
@@ -91,6 +94,16 @@ public class PaceNoteHUD : MonoBehaviour
         done.Dismiss(SlotPosition(0) - direction * exitDistance);
 
         FillSlots(); // pulls the next waiting note in and shifts everyone forward
+    }
+
+    // Remove everything (used when the car respawns / restarts)
+    public void Clear()
+    {
+        if (container == null) return;
+        waiting.Clear();
+        for (int i = 0; i < visible.Count; i++)
+            visible[i].Dismiss(SlotPosition(i) - direction * exitDistance);
+        visible.Clear();
     }
 
     void FillSlots()

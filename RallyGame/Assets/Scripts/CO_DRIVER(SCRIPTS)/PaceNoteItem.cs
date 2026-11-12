@@ -12,10 +12,11 @@ public class PaceNoteItem : MonoBehaviour
     public Image badge;
 
     [Header("Feel")]
-    [Tooltip("Higher = faster")]
-    public float stiffness = 900f;
-    [Tooltip("About 2 x sqrt(stiffness) = smooth, no bounce. Lower it for a bouncy feel.")]
-    public float damping = 60f;
+    [Tooltip("Higher = snappier. 30 settles in about a quarter of a second.")]
+    public float speed = 30f;
+    [Tooltip("1 = smooth, no bounce. Lower it (0.5 - 0.7) for a bouncy feel.")]
+    [Range(0.2f, 1f)]
+    public float dampingRatio = 1f;
     [Tooltip("How fast the tile fades in/out (alpha per second)")]
     public float fadeSpeed = 4f;
     [Tooltip("Scale the tile shrinks to while it slides out")]
@@ -25,7 +26,7 @@ public class PaceNoteItem : MonoBehaviour
     CanvasGroup group;
 
     Vector2 targetPos;
-    Vector2 velPos;
+    float velX, velY;
     float targetScale = 1f;
     float velScale;
     float targetAlpha = 1f;
@@ -41,6 +42,7 @@ public class PaceNoteItem : MonoBehaviour
     public void Spawn(Sprite sprite, Sprite badgeSprite, Vector2 startPos, float startScale)
     {
         icon.sprite = sprite;
+        icon.enabled = sprite != null; // no sprite = nothing, instead of a white square
 
         if (badge != null)
         {
@@ -78,25 +80,50 @@ public class PaceNoteItem : MonoBehaviour
     void Update()
     {
         // Unscaled time, so the HUD still animates if your game sets Time.timeScale to 0 (menus, pause).
-        // Clamped so a lag spike can't make the spring jitter.
-        float dt = Mathf.Min(Time.unscaledDeltaTime, 1f / 30f);
+        // The clamp only stops one huge hitch (like a scene load) from skipping the whole animation.
+        float dt = Mathf.Min(Time.unscaledDeltaTime, 0.1f);
 
-        // Spring for position
         Vector2 pos = rt.anchoredPosition;
-        velPos += (targetPos - pos) * stiffness * dt;
-        velPos *= Mathf.Exp(-damping * dt);
-        rt.anchoredPosition = pos + velPos * dt;
+        Spring(ref pos.x, ref velX, targetPos.x, speed, dampingRatio, dt);
+        Spring(ref pos.y, ref velY, targetPos.y, speed, dampingRatio, dt);
+        rt.anchoredPosition = pos;
 
-        // Spring for scale
         float s = rt.localScale.x;
-        velScale += (targetScale - s) * stiffness * dt;
-        velScale *= Mathf.Exp(-damping * dt);
-        rt.localScale = Vector3.one * Mathf.Max(0f, s + velScale * dt);
+        Spring(ref s, ref velScale, targetScale, speed, dampingRatio, dt);
+        rt.localScale = Vector3.one * Mathf.Max(0f, s);
 
         // Plain fade
         group.alpha = Mathf.MoveTowards(group.alpha, targetAlpha, fadeSpeed * dt);
 
         if (dismissed && group.alpha <= 0.01f)
             Destroy(gameObject);
+    }
+
+    // Moves x toward target like a damped spring. This is the exact solution of the spring
+    // equation for a time step of dt, so it behaves the same at 20 fps and at 240 fps
+    // (a simple "add force, multiply by drag" spring gets slower and slower at low frame rates).
+    static void Spring(ref float x, ref float v, float target, float omega, float zeta, float dt)
+    {
+        float d = x - target;
+
+        if (zeta >= 0.999f)
+        {
+            // Critically damped: fastest approach with no overshoot
+            float e = Mathf.Exp(-omega * dt);
+            float k = v + omega * d;
+            x = target + (d + k * dt) * e;
+            v = (v - k * omega * dt) * e;
+        }
+        else
+        {
+            // Underdamped: overshoots a little and wobbles into place
+            float za = zeta * omega;
+            float wd = omega * Mathf.Sqrt(1f - zeta * zeta);
+            float e = Mathf.Exp(-za * dt);
+            float cos = Mathf.Cos(wd * dt);
+            float sin = Mathf.Sin(wd * dt);
+            x = target + e * (d * cos + ((v + za * d) / wd) * sin);
+            v = e * (v * cos - ((za * v + omega * omega * d) / wd) * sin);
+        }
     }
 }
