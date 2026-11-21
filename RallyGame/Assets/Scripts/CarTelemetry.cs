@@ -30,6 +30,7 @@ public class CarTelemetry : MonoBehaviour
     public float SpeedKmh { get; private set; }
     public float Rpm { get; private set; }
     public float MaxRpm => maxRpm;
+    public float IdleRpm => idleRpm;
     public int Gear { get; private set; } = 1;          // -1 = reverse
     public string GearLabel => Gear < 0 ? "R" : Gear.ToString();
     public float Throttle { get; private set; }         // 0..1
