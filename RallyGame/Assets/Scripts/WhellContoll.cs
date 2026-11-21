@@ -42,6 +42,7 @@ public class WheelControll : MonoBehaviour
         // Brakes
         public const float BrakeTorque = 2200f;
         public const float HandbrakePower = 3000f;
+        public const float BrakeBuildTime = 0.2f;
 
         // Steering
         public const float MaxSteer = 30f;
@@ -68,7 +69,7 @@ public class WheelControll : MonoBehaviour
         public const float FeintGripLoss = 0.4f;
         public const float FeintYawKick = 2.5f;
         public const float FeintDuration = 0.6f;
-        public const float FeintSteerThreshold = 0.5f;
+        public const float FeintSteerThreshold = 0.7f;
         public const float FeintWindow = 0.45f;
         public const float FeintMinKmh = 40f;
 
@@ -155,6 +156,8 @@ public class WheelControll : MonoBehaviour
     [SerializeField, Range(0f, 6000f)] private float brakeTorque = Defaults.BrakeTorque;
     [Tooltip("Brake torque on the rear wheels while the handbrake is held.")]
     [SerializeField, Range(0f, 8000f)] private float handbrakePower = Defaults.HandbrakePower;
+    [Tooltip("Seconds for the brakes to build from 0 to full after you press brake, and again after landing. Lower = grabs harder, faster.")]
+    [SerializeField, Range(0.02f, 1f)] private float brakeBuildTime = Defaults.BrakeBuildTime;
 
     [Header("Steering")]
     [Tooltip("Maximum front wheel angle in degrees.")]
@@ -183,7 +186,7 @@ public class WheelControll : MonoBehaviour
     [Header("Drift Entry: Power Oversteer")]
     [Tooltip("How much throttle + steering at speed loosens the rear. 0 = off.")]
     [SerializeField, Range(0f, 0.8f)] private float powerOversteer = Defaults.PowerOversteer;
-    [Tooltip("Power oversteer only works above this speed.")]
+    [Tooltip("Power oversteer fades in from this speed and reaches full strength at 1.5x this speed.")]
     [SerializeField, Range(10f, 150f)] private float powerOversteerMinKmh = Defaults.PowerOversteerMinKmh;
     [Tooltip("Steering input needed before power oversteer kicks in (0..1).")]
     [SerializeField, Range(0f, 0.9f)] private float powerOversteerMinSteer = Defaults.PowerOversteerMinSteer;
@@ -328,6 +331,8 @@ public class WheelControll : MonoBehaviour
     private float throttleInput, steerInput;
     private bool handbrakeHeld;
     private float appliedThrottle;                  // throttle after brake-first logic
+    private float brakeApplied;                     // 0..1, how much of brakeTorque is currently applied
+    private int groundedWheels;                     // 0 = fully airborne
 
     // motion
     private float speedMS, forwardSpeedMS, slipAngle;
@@ -548,7 +553,7 @@ public class WheelControll : MonoBehaviour
         UpdateMotion();                 // speed + slip angle (the core value)
         UpdateDriftState(dt);           // IsDrifting, duration, events
         UpdateWheelSlip(dt);            // per-wheel slip, events, squeal
-        ApplyThrottleAndBrakes();
+        ApplyThrottleAndBrakes(dt);
         ApplySteering(dt);              // speed-sensitive steering + counter-steer
         UpdateRearGrip(dt);             // handbrake / power / feint / hold / angle limit
         ApplyDriftForces();             // speed retention, spin guard, feint kick
@@ -621,6 +626,7 @@ public class WheelControll : MonoBehaviour
     private void UpdateWheelSlip(float dt)
     {
         float maxSlip = 0f;
+        groundedWheels = 0;
 
         for (int i = 0; i < 4; i++)
         {
@@ -629,6 +635,7 @@ public class WheelControll : MonoBehaviour
             if (wheels[i].GetGroundHit(out WheelHit hit))
             {
                 d.grounded = true;
+                groundedWheels++;
                 d.forwardSlip = hit.forwardSlip;
                 d.sidewaysSlip = hit.sidewaysSlip;
 
@@ -651,23 +658,29 @@ public class WheelControll : MonoBehaviour
     }
 
     // --- throttle & brakes --------------------------------------------------
-    private void ApplyThrottleAndBrakes()
+    private void ApplyThrottleAndBrakes(float dt)
     {
         float throttle = throttleInput;
-        float brake = 0f;
+        float brakeTarget = 0f;          // 0..1 of brakeTorque
 
         bool oppositeInput = throttle * forwardSpeedMS < 0f && Mathf.Abs(forwardSpeedMS) > 1f;
         if (oppositeInput)
         {
-            brake = brakeTorque;     // pressing S while rolling forward = brake first
+            brakeTarget = Mathf.Abs(throttle);   // pressing S while rolling forward = brake first, scaled by how far it is pressed
             throttle = 0f;
-        }
-        else if (Mathf.Abs(throttle) < 0.05f)
-        {
-            brake = CoastBrake;      // light engine braking when you let off
         }
 
         appliedThrottle = throttle;
+
+        // Brakes build up over brakeBuildTime instead of slamming on, and release immediately.
+        // While fully airborne nothing is braked and the ramp restarts from zero,
+        // so landing with the brake held is a smooth build-up, not an instant stop.
+        if (groundedWheels == 0) brakeApplied = 0f;
+        else if (brakeTarget > brakeApplied) brakeApplied = Mathf.MoveTowards(brakeApplied, brakeTarget, dt / brakeBuildTime);
+        else brakeApplied = brakeTarget;
+
+        bool coasting = !oppositeInput && Mathf.Abs(throttle) < 0.05f;   // light engine braking when you let off
+        float brake = brakeApplied * brakeTorque + (coasting ? CoastBrake : 0f);
 
         // Engine torque fades out toward top speed instead of hitting a wall.
         float limit = throttle >= 0f ? topSpeedKmh : reverseSpeedKmh;
@@ -678,15 +691,19 @@ public class WheelControll : MonoBehaviour
         float rearTorque = engine * rearPowerShare * 0.5f;
         float handbrake = handbrakeHeld ? handbrakePower : 0f;
 
-        wheels[0].motorTorque = frontTorque;
-        wheels[1].motorTorque = frontTorque;
-        wheels[2].motorTorque = rearTorque;
-        wheels[3].motorTorque = rearTorque;
+        SetWheelTorque(0, frontTorque, brake);
+        SetWheelTorque(1, frontTorque, brake);
+        SetWheelTorque(2, rearTorque, brake * RearBrakeShare + handbrake);
+        SetWheelTorque(3, rearTorque, brake * RearBrakeShare + handbrake);
+    }
 
-        wheels[0].brakeTorque = brake;
-        wheels[1].brakeTorque = brake;
-        wheels[2].brakeTorque = brake * RearBrakeShare + handbrake;
-        wheels[3].brakeTorque = brake * RearBrakeShare + handbrake;
+    // A wheel in the air gets no engine or brake torque: with almost no inertia it would
+    // spin up (or lock) instantly, then grab or skid the moment it touches down.
+    private void SetWheelTorque(int index, float motor, float brake)
+    {
+        bool grounded = slipData[index].grounded;
+        wheels[index].motorTorque = grounded ? motor : 0f;
+        wheels[index].brakeTorque = grounded ? brake : 0f;
     }
 
     // --- steering -------------------------------------------------------------
@@ -779,6 +796,8 @@ public class WheelControll : MonoBehaviour
     // --- extra forces ---------------------------------------------------------------
     private void ApplyDriftForces()
     {
+        if (groundedWheels == 0) return;     // no speed boost, yaw damping or feint kick mid-air
+
         float throttle = Mathf.Max(0f, appliedThrottle);
 
         // Speed retention: a small push (half along the nose, half along the velocity) while drifting on throttle.
@@ -875,6 +894,7 @@ public class WheelControll : MonoBehaviour
         intentGrip = 1f;
         rearGripFactor = 1f;
         feintTimer = 0f;
+        brakeApplied = 0f;
         EndDrift();
     }
 
@@ -909,7 +929,7 @@ public class WheelControll : MonoBehaviour
             : "<color=#BBBBBB>grip</color>";
 
         string text =
-            "State: " + state + "\n" +
+            "State: " + state + "   Wheels on ground: " + groundedWheels + "/4\n" +
             "Speed: " + SpeedKmh.ToString("0") + " km/h\n" +
             "Slip angle: " + slipAngle.ToString("0.0") + " deg\n" +
             "Drift time: " + DriftDuration.ToString("0.0") + " s  (last " + lastDriftDuration.ToString("0.0") + " s)\n" +
