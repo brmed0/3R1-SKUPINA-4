@@ -30,6 +30,42 @@ public class EngineRecording
 
     [Tooltip("Scrub mode only: timestamps in the recording mapped to RPM. Add at least 2 keys, e.g. (0 s = 900 rpm), (4 s = 3000 rpm), (9 s = 7500 rpm).")]
     public RpmKey[] keys = new RpmKey[0];
+
+    [Tooltip("Scrub mode only: length in seconds of the small piece that is looped around the spot that matches the current RPM.\n" +
+             "Example: keys (1 s = 2000 rpm) and (3 s = 4000 rpm) with Hold Length 0.5 -> at 2000 rpm only about 0.75 s - 1.25 s is played (looped), at 4000 rpm only about 2.75 s - 3.25 s.\n" +
+             "Smaller = stays closer to the exact moment you keyed, but loops more often. 0 = off (old behaviour: the playhead runs on until the RPM drifts too far).")]
+    [Min(0f)] public float holdLength = 0f;
+}
+
+/// <summary>
+/// AUTO SLICE: one recording + the RPM range it covers (from -> to).
+/// The script reads the clip length, cuts the clip into equal slices,
+/// turns every slice into a short loop and gives each loop its own part of the RPM range.
+/// Example: 3 s clip, 1000-2500 rpm, slice 1 s, chunk 0.2 s ->
+///   slice 1 (0-1 s) -> 0.2 s loop for 1000-1500 rpm
+///   slice 2 (1-2 s) -> 0.2 s loop for 1500-2000 rpm
+///   slice 3 (2-3 s) -> 0.2 s loop for 2000-2500 rpm
+/// </summary>
+[System.Serializable]
+public class AutoSliceRecording
+{
+    public string label = "Slice set";
+    public AudioClip clip;
+    [Range(0f, 2f)] public float volume = 1f;
+
+    [Tooltip("RPM at the START of the recording.")]
+    public float rpmFrom = 1000f;
+    [Tooltip("RPM at the END of the recording.")]
+    public float rpmTo = 2500f;
+
+    [Tooltip("Wanted length of one slice in seconds. Clip length / this = number of slices (rounded down, min 1).")]
+    [Min(0.1f)] public float sliceSeconds = 1f;
+    [Tooltip("Length in seconds of the loop cut out of each slice.")]
+    [Min(0.05f)] public float chunkSeconds = 0.2f;
+    [Tooltip("Where in the slice the loop is cut. 0 = start of slice, 0.5 = middle, 1 = end of slice.")]
+    [Range(0f, 1f)] public float chunkPosition = 0f;
+    [Tooltip("Length in seconds of the blend at the loop seam. Removes the click when the loop restarts.")]
+    [Range(0.005f, 0.1f)] public float seamFade = 0.03f;
 }
 
 /// <summary>
@@ -60,6 +96,13 @@ public class EngineAudio : MonoBehaviour
     public bool playShiftOnDownshift = false;
     [Tooltip("The Deceleration one-shot only plays if RPM (0-1 between Min and Max RPM) was above this when you lifted off the gas.")]
     [Range(0f, 1f)] public float decelerationMinRpm = 0.5f;
+
+    [Header("AUTO SLICE (easiest): low / mid / high files")]
+    [Tooltip("Put your low, mid and high clips here. Set the RPM range of each.\n" +
+             "The script reads how long each clip is, cuts it into slices, makes a short loop of each slice and maps the loops to the RPM range.\n" +
+             "If any clip is here, it replaces Quick setup and Accel Recordings.\n" +
+             "IMPORTANT: each AudioClip must have Load Type = Decompress On Load (so the script can read the samples).")]
+    public AutoSliceRecording[] autoSlices;
 
     [Header("Quick setup: 4 looping recordings")]
     [Tooltip("Used when the 'Accel Recordings' list below is empty. Each clip is looped, crossfaded by RPM and pitch-shifted around the RPM you enter.")]
@@ -141,11 +184,14 @@ public class EngineAudio : MonoBehaviour
         public int active;                 // scrub: which source is the current one
         public bool started;               // scrub: has a segment been started?
         public float[] gain = new float[2];// scrub: crossfade gains
+        public float segEnd;               // scrub + hold: playhead time at which the loop jumps back
+        public float segRpm;               // scrub + hold: the RPM the current piece was picked for
     }
 
     private Voice[] accelVoices = new Voice[0];
     private Voice[] decelVoices = new Voice[0];
     private AudioSource oneShotSrc;
+    private readonly List<AudioClip> madeClips = new List<AudioClip>(); // clips the script cut itself
 
     private float audioRpm;
     private float onWeight;
@@ -172,11 +218,23 @@ public class EngineAudio : MonoBehaviour
         oneShotSrc = MakeSource("Engine_OneShots", false);
         oneShotSrc.volume = 1f; // PlayOneShot is multiplied by this, so it must not be 0
 
-        accelVoices = BuildSet("On", HasClip(accelRecordings) ? accelRecordings : QuickSet());
+        EngineRecording[] onSet;
+        if (HasAutoClip(autoSlices)) onSet = BuildAutoSlices(autoSlices);
+        else if (HasClip(accelRecordings)) onSet = accelRecordings;
+        else onSet = QuickSet();
+
+        accelVoices = BuildSet("On", onSet);
         decelVoices = BuildSet("Off", decelRecordings);
 
         if (accelVoices.Length == 0)
-            Debug.LogWarning("[EngineAudio] No engine recordings assigned (Quick setup clips or Accel Recordings).", this);
+            Debug.LogWarning("[EngineAudio] No engine recordings assigned (Auto Slice, Quick setup clips or Accel Recordings).", this);
+    }
+
+    private void OnDestroy()
+    {
+        for (int i = 0; i < madeClips.Count; i++)
+            if (madeClips[i] != null) Destroy(madeClips[i]);
+        madeClips.Clear();
     }
 
     private void Start()
@@ -209,6 +267,108 @@ public class EngineAudio : MonoBehaviour
         for (int i = 0; i < recs.Length; i++)
             if (recs[i] != null && recs[i].clip != null) return true;
         return false;
+    }
+
+    private static bool HasAutoClip(AutoSliceRecording[] recs)
+    {
+        if (recs == null) return false;
+        for (int i = 0; i < recs.Length; i++)
+            if (recs[i] != null && recs[i].clip != null) return true;
+        return false;
+    }
+
+    // ------------------------------------------------------------------ Auto slice
+
+    // Reads each clip length, cuts it in slices, makes one short loop per slice,
+    // and gives each loop its own RPM band. Result is a normal loop list for BuildSet.
+    private EngineRecording[] BuildAutoSlices(AutoSliceRecording[] sets)
+    {
+        var result = new List<EngineRecording>();
+
+        for (int i = 0; i < sets.Length; i++)
+        {
+            AutoSliceRecording a = sets[i];
+            if (a == null || a.clip == null) continue;
+
+            AudioClip src = a.clip;
+            int channels = src.channels;
+            int freq = src.frequency;
+            int totalFrames = src.samples;
+
+            var data = new float[totalFrames * channels];
+            if (!src.GetData(data, 0))
+            {
+                Debug.LogWarning("[EngineAudio] Cannot read '" + src.name + "'. Set its Load Type to 'Decompress On Load' in the import settings.", this);
+                continue;
+            }
+
+            float length = (float)totalFrames / freq;
+            int sliceCount = Mathf.Max(1, Mathf.FloorToInt(length / Mathf.Max(0.1f, a.sliceSeconds)));
+            float sliceLen = length / sliceCount;                       // real slice length, uses the whole clip
+            float chunkLen = Mathf.Min(a.chunkSeconds, sliceLen);
+
+            int chunkFrames = Mathf.Max(64, Mathf.RoundToInt(chunkLen * freq));
+            int fadeFrames = Mathf.Clamp(Mathf.RoundToInt(a.seamFade * freq), 8, chunkFrames / 2);
+
+            float rpmStep = (a.rpmTo - a.rpmFrom) / sliceCount;
+
+            for (int s = 0; s < sliceCount; s++)
+            {
+                float sliceStart = s * sliceLen;
+                float start = sliceStart + (sliceLen - chunkLen) * a.chunkPosition;
+                int startFrame = Mathf.RoundToInt(start * freq);
+
+                // Need chunkFrames + fadeFrames of audio. Slide the start back if the clip is too short at the end.
+                int needed = chunkFrames + fadeFrames;
+                startFrame = Mathf.Clamp(startFrame, 0, Mathf.Max(0, totalFrames - needed));
+                int availableFade = Mathf.Min(fadeFrames, Mathf.Max(0, totalFrames - startFrame - chunkFrames));
+
+                var chunk = new float[chunkFrames * channels];
+                for (int f = 0; f < chunkFrames; f++)
+                {
+                    for (int c = 0; c < channels; c++)
+                    {
+                        int srcIdx = (startFrame + f) * channels + c;
+                        float sample = data[Mathf.Min(srcIdx, data.Length - 1)];
+
+                        // Seam: blend the audio that comes AFTER the loop into its start (equal power),
+                        // so the loop end flows straight into the loop start.
+                        if (f < availableFade)
+                        {
+                            float t = (float)f / availableFade * 0.5f * Mathf.PI;
+                            float after = data[(startFrame + chunkFrames + f) * channels + c];
+                            sample = sample * Mathf.Sin(t) + after * Mathf.Cos(t);
+                        }
+                        chunk[f * channels + c] = sample;
+                    }
+                }
+
+                string name = src.name + "_slice" + s;
+                AudioClip made = AudioClip.Create(name, chunkFrames, channels, freq, false);
+                made.SetData(chunk, 0);
+                madeClips.Add(made);
+
+                float bandFrom = a.rpmFrom + rpmStep * s;
+                float bandTo = bandFrom + rpmStep;
+                float center = (bandFrom + bandTo) * 0.5f;
+
+                result.Add(new EngineRecording
+                {
+                    label = (string.IsNullOrEmpty(a.label) ? src.name : a.label) + "_" + s,
+                    clip = made,
+                    volume = a.volume,
+                    scrub = false,
+                    recordedRpm = center
+                });
+
+                if (showDebug)
+                    Debug.Log("[EngineAudio] " + name + ": clip " + length.ToString("F2") + " s, slice " + sliceLen.ToString("F2") +
+                              " s, loop " + chunkLen.ToString("F2") + " s from " + start.ToString("F2") + " s -> " +
+                              bandFrom.ToString("F0") + "-" + bandTo.ToString("F0") + " rpm", this);
+            }
+        }
+
+        return result.ToArray();
     }
 
     private Voice[] BuildSet(string setName, EngineRecording[] recs)
@@ -449,15 +609,33 @@ public class EngineAudio : MonoBehaviour
             return;
         }
 
-        // Does the playhead still match the wanted RPM?
+        bool hold = v.rec.holdLength > 0.01f;
+
+        // Is it time to jump to a new spot?
         bool needSeek = !v.started || !v.src[v.active].isPlaying;
         if (!needSeek)
         {
             float t = v.src[v.active].time;
-            float playRpm = RpmAtTime(v.keys, t);
-            float drift = Mathf.Abs(playRpm - rpm) / Mathf.Max(1f, rpm);
             float clipEnd = v.rec.clip.length - 0.08f;
-            if (drift > scrubWindow || t >= clipEnd) needSeek = true;
+
+            if (t >= clipEnd)
+            {
+                needSeek = true;
+            }
+            else if (hold)
+            {
+                // Hold mode: keep looping the small piece until it ends,
+                // or until the RPM has moved too far away from the RPM this piece was picked for.
+                float pieceDrift = Mathf.Abs(rpm - v.segRpm) / Mathf.Max(1f, rpm);
+                if (t >= v.segEnd || pieceDrift > scrubWindow) needSeek = true;
+            }
+            else
+            {
+                // Old behaviour: the playhead runs on until its RPM no longer matches.
+                float playRpm = RpmAtTime(v.keys, t);
+                float drift = Mathf.Abs(playRpm - rpm) / Mathf.Max(1f, rpm);
+                if (drift > scrubWindow) needSeek = true;
+            }
         }
 
         if (needSeek) BeginSegment(v, rpm);
@@ -489,14 +667,36 @@ public class EngineAudio : MonoBehaviour
     {
         int next = v.started ? 1 - v.active : v.active;
         AudioSource s = v.src[next];
+        float clipLen = v.rec.clip.length;
+        float t;
 
-        // Start slightly BEFORE the wanted spot so the playhead travels through it
-        float t0 = TimeAtRpm(v.keys, rpm);
-        float slope = RpmAtTime(v.keys, t0 + 0.1f) - RpmAtTime(v.keys, t0 - 0.1f);
-        float dir = slope >= 0f ? 1f : -1f;
-        float startRpm = Mathf.Max(1f, rpm * (1f - dir * scrubWindow * 0.8f));
-        float t = TimeAtRpm(v.keys, startRpm);
-        t = Mathf.Clamp(t, 0f, Mathf.Max(0f, v.rec.clip.length - 0.1f));
+        if (v.rec.holdLength > 0.01f)
+        {
+            // Hold mode: pick a small piece CENTERED on the timestamp that belongs to this RPM.
+            // The piece must be longer than two crossfades so the loop jump stays smooth.
+            float len = Mathf.Max(v.rec.holdLength, scrubCrossfade * 2f + 0.02f);
+            len = Mathf.Min(len, Mathf.Max(0.1f, clipLen - 0.1f));
+
+            float centerTime = TimeAtRpm(v.keys, rpm);
+            t = Mathf.Clamp(centerTime - len * 0.5f, 0f, Mathf.Max(0f, clipLen - len - 0.05f));
+
+            // Start the jump one crossfade BEFORE the piece ends, so the fade-out stays inside the piece.
+            v.segEnd = t + len - scrubCrossfade;
+            v.segRpm = rpm;
+        }
+        else
+        {
+            // Old behaviour: start slightly BEFORE the wanted spot so the playhead travels through it
+            float t0 = TimeAtRpm(v.keys, rpm);
+            float slope = RpmAtTime(v.keys, t0 + 0.1f) - RpmAtTime(v.keys, t0 - 0.1f);
+            float dir = slope >= 0f ? 1f : -1f;
+            float startRpm = Mathf.Max(1f, rpm * (1f - dir * scrubWindow * 0.8f));
+            t = TimeAtRpm(v.keys, startRpm);
+            t = Mathf.Clamp(t, 0f, Mathf.Max(0f, clipLen - 0.1f));
+
+            v.segEnd = float.MaxValue;
+            v.segRpm = rpm;
+        }
 
         s.Stop();
         s.clip = v.rec.clip;
