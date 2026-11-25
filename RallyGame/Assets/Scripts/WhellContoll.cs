@@ -120,6 +120,8 @@ public class WhellContoll : MonoBehaviour
     [SerializeField] private Transform frontLeftMesh;
     [SerializeField] private Transform backRightMesh;
     [SerializeField] private Transform backLeftMesh;
+    [Tooltip("Use the assigned wheel groups as hub pivots. Leave off for meshes with an off-center pivot.")]
+    [SerializeField] private bool useAuthoredWheelPivots;
 
     [Header("Input (old Input Manager)")]
     [Tooltip("Handbrake key. WASD / arrows / left stick are already covered by the default Vertical and Horizontal axes.")]
@@ -673,6 +675,7 @@ public class WhellContoll : MonoBehaviour
             if (meshes[i] == null) continue;
 
             meshOffset[i] = Quaternion.Inverse(wheels[i].transform.rotation) * meshes[i].rotation;
+            if (useAuthoredWheelPivots) continue;
 
             Renderer[] renderers = meshes[i].GetComponentsInChildren<Renderer>();
             if (renderers.Length == 0) continue;

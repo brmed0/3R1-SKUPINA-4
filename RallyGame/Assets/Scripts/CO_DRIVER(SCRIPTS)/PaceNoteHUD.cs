@@ -27,9 +27,9 @@ public class PaceNoteHUD : MonoBehaviour
     [Tooltip("Direction the upcoming notes line up in. (1,0) = to the right, (0,-1) = downwards")]
     public Vector2 direction = Vector2.right;
     [Tooltip("Size of each slot relative to the tile. One entry per slot, so 3 entries = 3 notes visible.")]
-    public float[] slotScales = { 1f, 0.75f, 0.5f };
+    public float[] slotScales = { 1f, 0.78f, 0.62f };
     [Tooltip("Empty space between neighbouring tiles")]
-    public float gap = 70f;
+    public float gap = 16f;
     [Tooltip("How far the passed note slides back while it fades out")]
     public float exitDistance = 150f;
 
@@ -41,6 +41,10 @@ public class PaceNoteHUD : MonoBehaviour
         public Sprite icon;
         public Sprite badge;
     }
+
+    static readonly Color CurrentFrame = new Color(0.83f, 0.94f, 1f);
+    static readonly Color PreviewFrame = new Color(0.07f, 0.11f, 0.15f);
+    const float FrameInset = 3f;
 
     public int VisibleCapacity => slotScales != null && slotScales.Length > 0 ? slotScales.Length : 3;
 
@@ -60,7 +64,7 @@ public class PaceNoteHUD : MonoBehaviour
         // Guard against empty / zero values in the Inspector, which would stack or hide every tile
         if (direction.sqrMagnitude < 0.0001f) direction = Vector2.right;
         direction = direction.normalized;
-        if (slotScales == null || slotScales.Length == 0) slotScales = new float[] { 1f, 0.75f, 0.5f };
+        if (slotScales == null || slotScales.Length == 0) slotScales = new float[] { 1f, 0.78f, 0.62f };
 
         // Draw on top of the other UI under the same Canvas
         transform.SetAsLastSibling();
@@ -137,7 +141,20 @@ public class PaceNoteHUD : MonoBehaviour
         rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
         rt.sizeDelta = new Vector2(tileSize, tileSize);
 
-        Image icon = go.GetComponent<Image>();
+        Image frame = go.GetComponent<Image>();
+        frame.color = PreviewFrame;
+        frame.raycastTarget = false;
+
+        GameObject iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+        iconGo.layer = go.layer;
+        RectTransform iconRect = (RectTransform)iconGo.transform;
+        iconRect.SetParent(rt, false);
+        iconRect.anchorMin = Vector2.zero;
+        iconRect.anchorMax = Vector2.one;
+        iconRect.offsetMin = Vector2.one * FrameInset;
+        iconRect.offsetMax = -Vector2.one * FrameInset;
+
+        Image icon = iconGo.GetComponent<Image>();
         icon.raycastTarget = false;
         icon.preserveAspect = true;
 
@@ -165,7 +182,12 @@ public class PaceNoteHUD : MonoBehaviour
     void ApplyLayout()
     {
         for (int i = 0; i < visible.Count; i++)
-            visible[i].SetTarget(SlotPosition(i), slotScales[i], 1f);
+        {
+            PaceNoteItem item = visible[i];
+            item.GetComponent<Image>().color = i == 0 ? CurrentFrame : PreviewFrame;
+            float opacity = i == 0 ? 1f : i == 1 ? 0.87f : 0.74f;
+            item.SetTarget(SlotPosition(i), slotScales[i], opacity);
+        }
     }
 
     // Tiles are packed edge to edge with a constant gap, so smaller tiles sit closer
