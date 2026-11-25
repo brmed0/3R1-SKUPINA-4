@@ -58,21 +58,21 @@ public class WhellContoll : MonoBehaviour
         public const float SteerReturnRate = 4f;         // input ramp back to center (grows with speed)
 
         // Tires
-        public const float GripFront = 1.15f;                // wider sport tires
-        public const float GripRear = 1.20f;                // rear > front = stable, understeers first at the limit
+        public const float GripFront = 1.22f;                // wider sport tires
+        public const float GripRear = 1.42f;                // rear > front = stable, understeers first at the limit
         public const float GripForward = 1.18f;
         public const float SidewaysPeakSlip = 0.16f;     // slip where side grip peaks
         public const float SidewaysSlideSlip = 0.55f;    // slip where the tire is fully sliding
-        public const float SidewaysSlideGrip = 0.85f;    // grip kept when fully sliding (fraction of peak)
+        public const float SidewaysSlideGrip = 0.91f;    // grip kept when fully sliding (fraction of peak)
         public const float LoadSensitivity = 0.15f;      // more load = less grip per load (weight transfer costs grip)
         public const float CombinedSlipReference = 0.65f; // forward slip where side grip is cut the most
-        public const float CombinedSlipGripLoss = 0.5f;  // side grip lost on a locked / fully spinning wheel
+        public const float CombinedSlipGripLoss = 0.42f;  // side grip lost on a locked / fully spinning wheel
         public const float GripResponse = 25f;           // how fast grip follows load / slip (per second)
 
         // Traction control (optional game assist)
-        public const float TractionControl = 0f;       // 0 = off, 1 = cuts throttle completely when the wheels spin
-        public const float TcSlipStart = 0.25f;          // rear wheel forward slip where TC starts to cut
-        public const float TcSlipFull = 0.60f;           // rear wheel forward slip where TC cuts the most
+        public const float TractionControl = 0.48f;       // 0 = off, 1 = cuts throttle completely when the wheels spin
+        public const float TcSlipStart = 0.16f;          // rear wheel forward slip where TC starts to cut
+        public const float TcSlipFull = 0.43f;           // rear wheel forward slip where TC cuts the most
 
         // Drift detection (only for IsDrifting + events, it does not change the physics)
         public const float DriftEnterAngle = 12f;
@@ -81,7 +81,7 @@ public class WhellContoll : MonoBehaviour
         public const float DriftExitDelay = 0.2f;
 
         // Counter-steer assist (0 = off)
-        public const float CounterSteerAssist = 0f;
+        public const float CounterSteerAssist = 0.23f;
         public const float CounterSteerDeadZone = 3f;
         public const float CounterSteerMinKmh = 15f;
 
@@ -249,6 +249,8 @@ public class WhellContoll : MonoBehaviour
     [SerializeField, Range(0f, 60f)] private float counterSteerMinKmh = Defaults.CounterSteerMinKmh;
 
     [Header("Stability")]
+    [Tooltip("Damp yaw only while a rear slide is growing. Zero disables this assist.")]
+    [SerializeField, Range(0f, 5f)] private float spinDamping = 2.4f;
     [SerializeField, Range(0.1f, 0.6f)] private float suspensionTravel = Defaults.SuspensionTravel;
     [Tooltip("Anti-roll bar stiffness. Higher = flatter cornering, harder to flip.")]
     [SerializeField, Range(0f, 20000f)] private float antiRoll = Defaults.AntiRoll;
@@ -717,6 +719,7 @@ public class WhellContoll : MonoBehaviour
         UpdateFrontGrip(dt);            // tire grip from load + combined slip
         UpdateRearGrip(dt);
         ApplyResistanceAndStability();
+        DampenGrowingSlide();
     }
 
     // --- slip angle -------------------------------------------------------
@@ -859,7 +862,10 @@ public class WhellContoll : MonoBehaviour
         if (tractionControl > 0f && groundedCount > 0 && appliedThrottle > 0.05f && brakePedal < 0.1f && handbrakePedal < 0.1f)
         {
             float spin = Mathf.Max(Mathf.Abs(slipData[RearLeft].forwardSlip), Mathf.Abs(slipData[RearRight].forwardSlip));
-            target = tractionControl * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(tcSlipStart, tcSlipFull, spin));
+            float rearSideSlip = Mathf.Max(Mathf.Abs(slipData[RearLeft].sidewaysSlip), Mathf.Abs(slipData[RearRight].sidewaysSlip));
+            // Let the driver launch in a straight line. Trim power when rear wheelspin uses up cornering grip.
+            float cornering = Mathf.InverseLerp(0.025f, sidewaysPeakSlip, rearSideSlip);
+            target = tractionControl * cornering * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(tcSlipStart, tcSlipFull, spin));
         }
         tractionCut = Mathf.MoveTowards(tractionCut, target, (target > tractionCut ? 12f : 4f) * dt);
     }
@@ -1025,7 +1031,7 @@ public class WhellContoll : MonoBehaviour
 
         float speedFactor = Mathf.Lerp(1f, highSpeedSteer,
             Mathf.InverseLerp(steerReduceStartKmh, Mathf.Max(topSpeedKmh, steerReduceStartKmh + 1f), SpeedKmh));
-        float roadLimit = Mathf.Atan(28f * wheelbase / Mathf.Max(1f, speedMS * speedMS)) * Mathf.Rad2Deg + 2f;
+        float roadLimit = Mathf.Atan(23f * wheelbase / Mathf.Max(1f, speedMS * speedMS)) * Mathf.Rad2Deg + 2f;
         // Give the driver more rack travel while steering into a slide.
         if (steerSmooth * slipAngle > 0f)
             roadLimit = Mathf.Lerp(roadLimit, maxSteer, 0.55f * Mathf.InverseLerp(8f, 34f, Mathf.Abs(slipAngle)));
@@ -1054,7 +1060,8 @@ public class WhellContoll : MonoBehaviour
         float beyondDeadZone = Mathf.Max(0f, Mathf.Abs(slipAngle) - counterSteerDeadZone);
         if (beyondDeadZone <= 0f) return 0f;
 
-        return Mathf.Sign(slipAngle) * beyondDeadZone * counterSteerAssist * speedGate;
+        float correction = Mathf.Min(8f, beyondDeadZone * counterSteerAssist);
+        return Mathf.Sign(slipAngle) * correction * speedGate;
     }
 
     // --- tire grip: load sensitivity + combined slip ------------------------------
@@ -1138,6 +1145,21 @@ public class WhellContoll : MonoBehaviour
 
         ApplyAntiRoll(FrontLeft, FrontRight, antiRoll);
         ApplyAntiRoll(RearLeft, RearRight, antiRoll * 0.70f);
+    }
+
+    private void DampenGrowingSlide()
+    {
+        if (forwardSpeedMS < 4f || handbrakeHeld || handbrakePedal > 0.2f ||
+            !slipData[RearLeft].grounded || !slipData[RearRight].grounded)
+            return;
+
+        Vector3 up = transform.up;
+        float yawRate = Vector3.Dot(rb.angularVelocity, up);
+        if (yawRate * slipAngle >= 0f)
+            return;
+
+        float amount = Mathf.InverseLerp(6f, 23f, Mathf.Abs(slipAngle));
+        rb.AddTorque(-up * (yawRate * spinDamping * amount), ForceMode.Acceleration);
     }
 
     private void ApplyAntiRoll(int left, int right, float rate)

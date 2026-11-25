@@ -42,6 +42,8 @@ public class PaceNoteHUD : MonoBehaviour
         public Sprite badge;
     }
 
+    public int VisibleCapacity => slotScales != null && slotScales.Length > 0 ? slotScales.Length : 3;
+
     readonly List<PaceNoteItem> visible = new List<PaceNoteItem>();
     readonly Queue<Note> waiting = new Queue<Note>();
 
