@@ -39,8 +39,15 @@ public class FollowCamera : MonoBehaviour
             return;
         }
 
+        SnapToTarget();
+    }
+
+    public void SnapToTarget()
+    {
+        if (target == null) return;
         currentYaw = target.eulerAngles.y;
         lastTargetPosition = target.position;
+        smoothedSpeed = 0f;
 
         // Start right behind the car instead of flying in from wherever the camera was.
         transform.position = GetDesiredPosition();

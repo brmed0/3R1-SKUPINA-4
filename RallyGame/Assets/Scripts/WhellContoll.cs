@@ -1203,8 +1203,15 @@ public class WhellContoll : MonoBehaviour
     // Press R to put the car back on its wheels.
     private void ResetUpright()
     {
-        rb.position = rb.position + Vector3.up;
-        rb.rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+        ResetVehiclePose(rb.position + Vector3.up, Quaternion.Euler(0f, transform.eulerAngles.y, 0f));
+    }
+
+    public void ResetVehiclePose(Vector3 position, Quaternion rotation)
+    {
+        if (rb == null || wheels == null) return;
+        transform.SetPositionAndRotation(position, rotation);
+        rb.position = position;
+        rb.rotation = rotation;
 #if UNITY_6000_0_OR_NEWER
         rb.linearVelocity = Vector3.zero;
 #else
@@ -1214,6 +1221,7 @@ public class WhellContoll : MonoBehaviour
 
         steerAngle = 0f;
         steerSmooth = 0f;
+        speedMS = forwardSpeedMS = slipAngle = 0f;
         appliedThrottle = brakePedal = handbrakePedal = 0f;
         reverseSelected = false;
         Gear = selectedGear = 1;
