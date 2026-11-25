@@ -1,107 +1,99 @@
 using System;
 using UnityEngine;
+using UnityEngine.Scripting.APIUpdating;
 
 /// <summary>
-/// Arcade drift controller for a 4-wheel car using WheelColliders.
-///
-/// Core idea: everything is driven by ONE value, the slip angle (angle between the
-/// car's nose and its direction of travel). The only thing changed at runtime is
-/// the rear tires' sideways grip:
-///
-///   handbrake / throttle + steering / feint  -> loosen the rear     (START a drift)
-///   counter-steer assist                     -> front wheels follow the slip angle (HOLD / CATCH)
-///   max drift angle                          -> rear grip blends back in smoothly (no spin-outs)
-///   speed retention                          -> small forward push while drifting on throttle
-///
-/// Setup: put this on the car root (needs a Rigidbody) and assign the 4 WheelColliders.
-/// Input: old Input Manager (keyboard + gamepad through the default Vertical/Horizontal axes).
+/// WheelCollider vehicle controller tuned for the European BMW E36 M3 3.2 coupe.
+/// The assisted controls keep W/S for drive, brake and reverse. E/Q can select gears.
 /// </summary>
+[MovedFrom(true, sourceAssembly: "Assembly-CSharp", sourceClassName: "WheelControll")]
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody))]
-public class WheelControll : MonoBehaviour
+public class WhellContoll : MonoBehaviour
 {
     // =====================================================================
-    //  DEFAULT TUNING VALUES
-    //  Every Inspector default lives in this block. Change a number here and
-    //  use "Reset" on the component (or add the script to a new car) to pick
-    //  it up. Components already in a scene keep the values serialized there.
+    //  STOCK E36 M3 3.2 TUNE
     // =====================================================================
     private static class Defaults
     {
-        // Car
-        public const float CarMass = 1300f;
-        public const float ComDrop = 0.25f;
-        public const float ComForwardShift = 0f;
+        public const float CarMass = 1460f;
+        public const float FrontWeightShare = 0.52f;
+        public const float CenterOfMassHeight = 0.50f;
+        public const float Wheelbase = 2.70f;
+        public const float FrontTrack = 1.430f;
+        public const float RearTrack = 1.451f;
+        public const float FrontTireRadius = (17f * 0.0254f + 2f * 0.225f * 0.45f) * 0.5f;
+        public const float RearTireRadius = (17f * 0.0254f + 2f * 0.245f * 0.40f) * 0.5f;
 
-        // Engine
-        public const float EnginePower = 2800f;
-        public const float RearPowerShare = 0.6f;
-        public const float TopSpeedKmh = 160f;
-        public const float ReverseSpeedKmh = 30f;
+        public const float DrivetrainEfficiency = 0.90f;
+        public const float MaxSpeedKmh = 250f;
+        public const float ReverseSpeedKmh = 40f;
+
+        // Differential (mild LSD, ~25-30% lock)
+        public const float LsdLock = 0.25f;              // 0 = open, 1 = locked
+        public const float LsdPreload = 35f;             // Nm
+        public const float LsdRamp = 2f;                 // Nm of torque shifted per rpm of wheel speed difference
 
         // Brakes
-        public const float BrakeTorque = 2200f;
-        public const float HandbrakePower = 3000f;
+        public const float BrakeTorque = 1600f;          // per FRONT wheel
+        public const float RearBrakeShare = 0.55f;       // rear torque relative to front (0.55 = ~65% front bias)
+        public const float HandbrakePower = 2000f;       // per REAR wheel, still locks them
+
+        // Pedal smoothing (units per second)
+        public const float ThrottleRise = 6f;               // gentler pedal, no instant stab
+        public const float ThrottleFall = 8f;
+        public const float BrakeRise = 6f;
+        public const float BrakeFall = 12f;
+        public const float HandbrakeRise = 8f;
+        public const float HandbrakeFall = 7f;
 
         // Steering
-        public const float MaxSteer = 30f;
-        public const float SteerSpeed = 160f;
-        public const float HighSpeedSteer = 0.35f;
-        public const float SteerReduceStartKmh = 30f;
+        public const float MaxSteer = 32f;               // road wheel degrees
+        public const float LockToLockTurns = 3f;         // steering wheel turns lock to lock
+        public const float SteerSpeed = 1200f;           // now in STEERING WHEEL deg/s
+        public const float HighSpeedSteer = 0.2f;           // much calmer steering at speed
+        public const float SteerReduceStartKmh = 20f;
+        public const float TopSpeedKmh = 200f;           // reference speed for the steering reduction only
+        public const float SteerRiseRate = 2.0f;         // input ramp toward the key / stick (units per second)
+        public const float SteerReturnRate = 4f;         // input ramp back to center (grows with speed)
 
         // Tires
-        public const float GripFront = 1.8f;
-        public const float GripRear = 1.6f;
-        public const float GripForward = 1.5f;
+        public const float GripFront = 1.15f;                // wider sport tires
+        public const float GripRear = 1.20f;                // rear > front = stable, understeers first at the limit
+        public const float GripForward = 1.18f;
+        public const float SidewaysPeakSlip = 0.16f;     // slip where side grip peaks
+        public const float SidewaysSlideSlip = 0.55f;    // slip where the tire is fully sliding
+        public const float SidewaysSlideGrip = 0.85f;    // grip kept when fully sliding (fraction of peak)
+        public const float LoadSensitivity = 0.15f;      // more load = less grip per load (weight transfer costs grip)
+        public const float CombinedSlipReference = 0.65f; // forward slip where side grip is cut the most
+        public const float CombinedSlipGripLoss = 0.5f;  // side grip lost on a locked / fully spinning wheel
+        public const float GripResponse = 25f;           // how fast grip follows load / slip (per second)
 
-        // Drift entry: handbrake + grip transitions
-        public const float HandbrakeGrip = 0.45f;
-        public const float GripLossRate = 10f;
-        public const float GripRecovery = 1.2f;
+        // Traction control (optional game assist)
+        public const float TractionControl = 0f;       // 0 = off, 1 = cuts throttle completely when the wheels spin
+        public const float TcSlipStart = 0.25f;          // rear wheel forward slip where TC starts to cut
+        public const float TcSlipFull = 0.60f;           // rear wheel forward slip where TC cuts the most
 
-        // Drift entry: power oversteer
-        public const float PowerOversteer = 0.4f;
-        public const float PowerOversteerMinKmh = 45f;
-        public const float PowerOversteerMinSteer = 0.3f;
-
-        // Drift entry: feint
-        public const float FeintGripLoss = 0.4f;
-        public const float FeintYawKick = 2.5f;
-        public const float FeintDuration = 0.6f;
-        public const float FeintSteerThreshold = 0.5f;
-        public const float FeintWindow = 0.45f;
-        public const float FeintMinKmh = 40f;
-
-        // Drift detection
+        // Drift detection (only for IsDrifting + events, it does not change the physics)
         public const float DriftEnterAngle = 12f;
         public const float DriftExitAngle = 8f;
         public const float DriftMinSpeedKmh = 25f;
         public const float DriftExitDelay = 0.2f;
 
-        // Counter-steer
-        public const float CounterSteerAssist = 0.5f;
+        // Counter-steer assist (0 = off)
+        public const float CounterSteerAssist = 0f;
         public const float CounterSteerDeadZone = 3f;
         public const float CounterSteerMinKmh = 15f;
 
-        // Max drift angle
-        public const float MaxDriftAngle = 55f;
-        public const float AngleLimitStart = 0.6f;
-        public const float MaxAngleRearGrip = 1.5f;
-        public const float AngleLimitYawDamping = 3f;
-
-        // Speed retention / holding
-        public const float DriftSpeedBoost = 3f;
-        public const float DriftBoostFullAngle = 30f;
-        public const float DriftHoldGrip = 0.8f;
-
         // Stability
-        public const float SuspensionTravel = 0.3f;
-        public const float AntiRoll = 6000f;
-        public const float Downforce = 30f;
+        public const float SuspensionTravel = 0.22f;
+        public const float AntiRoll = 4200f;
+        public const float Downforce = 0f;              // was 30. Small, just calms high speed
 
         // Resistance
-        public const float RollingResistance = 190f;
-        public const float AirDrag = 0.5f;
+        public const float RollingResistance = 170f;     // N
+        public const float RollingResistanceSpeedGain = 0.006f; // extra rolling resistance per m/s
+        public const float AirDrag = 0.41f;              // N per (m/s)^2, ~Cd 0.32 x 2.0 m^2
 
         // Effects
         public const float SkidSlipThreshold = 0.4f;
@@ -109,7 +101,8 @@ public class WheelControll : MonoBehaviour
         public const float SquealSmoothing = 12f;
 
         // Debug
-        public const bool ShowDebug = true;
+        public const bool ShowDebug = false;
+        public const float MaxDriftAngle = 55f;          // only the full scale of the HUD slip bar now
     }
 
     // =====================================================================
@@ -136,73 +129,109 @@ public class WheelControll : MonoBehaviour
     [Tooltip("Puts the car back on its wheels.")]
     [SerializeField] private KeyCode resetKey = KeyCode.R;
 
-    [Header("Car")]
+    [Header("European M3 3.2 setup")]
+    [Tooltip("Apply the stock road car tune at startup. Turn this off to use the chassis and tire values below.")]
+    [SerializeField] private bool useFactoryTune = true;
     [SerializeField, Range(500f, 3000f)] private float carMass = Defaults.CarMass;
-    [Tooltip("How far below the axles the center of mass sits. Higher = harder to flip.")]
-    [SerializeField, Range(0f, 0.8f)] private float comDrop = Defaults.ComDrop;
-    [Tooltip("Moves the center of mass toward the front (+) or rear (-). Rear-heavy = easier to rotate.")]
-    [SerializeField, Range(-0.6f, 0.6f)] private float comForwardShift = Defaults.ComForwardShift;
+    [SerializeField, Range(0.1f, 1f)] private float centerOfMassHeight = Defaults.CenterOfMassHeight;
+    [SerializeField, Range(0.3f, 0.7f)] private float frontWeightShare = Defaults.FrontWeightShare;
 
-    [Header("Engine")]
-    [Tooltip("Total drive torque shared between the wheels.")]
-    [SerializeField, Range(500f, 8000f)] private float enginePower = Defaults.EnginePower;
-    [Tooltip("Share of drive torque sent to the rear axle. 0.6 = rear-biased AWD, 1 = pure RWD.")]
-    [SerializeField, Range(0f, 1f)] private float rearPowerShare = Defaults.RearPowerShare;
-    [SerializeField, Range(40f, 300f)] private float topSpeedKmh = Defaults.TopSpeedKmh;
+    [Header("Six speed Getrag and clutch")]
+    [SerializeField] private bool automaticShifting = true;
+    [SerializeField] private KeyCode shiftUpKey = KeyCode.E;
+    [SerializeField] private KeyCode shiftDownKey = KeyCode.Q;
+    [SerializeField, Range(0.5f, 1f)] private float drivetrainEfficiency = Defaults.DrivetrainEfficiency;
+    [SerializeField, Min(0.1f)] private float shiftDuration = 0.23f;
+    [SerializeField, Range(60f, 400f)] private float maxSpeedKmh = Defaults.MaxSpeedKmh;
     [SerializeField, Range(5f, 80f)] private float reverseSpeedKmh = Defaults.ReverseSpeedKmh;
 
+    private static readonly float[] ForwardRatios = { 4.23f, 2.51f, 1.67f, 1.23f, 1f, 0.83f };
+    private const float ReverseRatio = 3.89f;
+    private const float FinalDrive = 3.23f;
+    private const float EngineIdleRpm = 800f;
+    private const float EngineLimitRpm = 7600f;
+    private const float EngineInertia = 0.26f;
+    private const float ClutchCapacity = 430f;
+    private const float ClutchStiffness = 32f;
+
+    // Estimated full-load curve pinned to 350 Nm at 3250 and 236 kW at 7400.
+    private readonly AnimationCurve engineTorqueCurve = new AnimationCurve(
+        new Keyframe(0f, 0f), new Keyframe(800f, 135f), new Keyframe(1500f, 230f),
+        new Keyframe(2500f, 313f), new Keyframe(3250f, 350f), new Keyframe(4500f, 348f),
+        new Keyframe(5500f, 340f), new Keyframe(6500f, 326f), new Keyframe(7400f, 304.5f),
+        new Keyframe(7600f, 290f), new Keyframe(8000f, 230f));
+
+    [Header("Differential (mild LSD)")]
+    [Tooltip("0 = open diff, 1 = locked. E36 LSD is mild.")]
+    [SerializeField, Range(0f, 1f)] private float lsdLock = Defaults.LsdLock;
+    [SerializeField, Range(0f, 300f)] private float lsdPreload = Defaults.LsdPreload;
+    [Tooltip("Nm moved from the faster rear wheel to the slower one, per rpm of difference.")]
+    [SerializeField, Range(0f, 20f)] private float lsdRamp = Defaults.LsdRamp;
+
+    [Header("Traction Control (set to 0 to turn off)")]
+    [Tooltip("Optional game assist. Zero lets the rear tires spin under power.")]
+    [SerializeField, Range(0f, 1f)] private float tractionControl = Defaults.TractionControl;
+    [Tooltip("Rear wheel forward slip where TC starts to cut.")]
+    [SerializeField, Range(0.05f, 1f)] private float tcSlipStart = Defaults.TcSlipStart;
+    [Tooltip("Rear wheel forward slip where TC cuts the most.")]
+    [SerializeField, Range(0.1f, 2f)] private float tcSlipFull = Defaults.TcSlipFull;
+
     [Header("Brakes")]
+    [SerializeField] private bool antiLockBrakes = true;
+    [Tooltip("Torque per front wheel (Nm).")]
     [SerializeField, Range(0f, 6000f)] private float brakeTorque = Defaults.BrakeTorque;
-    [Tooltip("Brake torque on the rear wheels while the handbrake is held.")]
+    [Tooltip("Rear brake torque relative to front. 0.55 = ~65% front bias.")]
+    [SerializeField, Range(0.1f, 1.5f)] private float rearBrakeShare = Defaults.RearBrakeShare;
+    [Tooltip("Brake torque on each rear wheel while the handbrake is held.")]
     [SerializeField, Range(0f, 8000f)] private float handbrakePower = Defaults.HandbrakePower;
+
+    [Header("Pedal Smoothing (units per second)")]
+    [SerializeField, Range(1f, 30f)] private float throttleRiseRate = Defaults.ThrottleRise;
+    [SerializeField, Range(1f, 30f)] private float throttleFallRate = Defaults.ThrottleFall;
+    [SerializeField, Range(1f, 30f)] private float brakeRiseRate = Defaults.BrakeRise;
+    [SerializeField, Range(1f, 30f)] private float brakeFallRate = Defaults.BrakeFall;
+    [SerializeField, Range(1f, 30f)] private float handbrakeRiseRate = Defaults.HandbrakeRise;
+    [SerializeField, Range(1f, 30f)] private float handbrakeFallRate = Defaults.HandbrakeFall;
 
     [Header("Steering")]
     [Tooltip("Maximum front wheel angle in degrees.")]
     [SerializeField, Range(10f, 45f)] private float maxSteer = Defaults.MaxSteer;
-    [Tooltip("How fast the wheels turn, in degrees per second.")]
-    [SerializeField, Range(30f, 400f)] private float steerSpeed = Defaults.SteerSpeed;
-    [Tooltip("Steering left at top speed, as a fraction of maxSteer. Lower = calmer at speed.")]
+    [Tooltip("Steering wheel turns from lock to lock. E36 = about 3. Sets the steering ratio.")]
+    [SerializeField, Range(1.5f, 5f)] private float steerLockToLockTurns = Defaults.LockToLockTurns;
+    [Tooltip("How fast the STEERING WHEEL can be turned (deg/s). Road wheel speed = this / steering ratio.")]
+    [SerializeField, Range(300f, 3000f)] private float steerSpeed = Defaults.SteerSpeed;
+    [Tooltip("Steering left at the reference top speed, as a fraction of maxSteer. Lower = calmer at speed.")]
     [SerializeField, Range(0.1f, 1f)] private float highSpeedSteer = Defaults.HighSpeedSteer;
     [Tooltip("Speed where steering starts to reduce.")]
     [SerializeField, Range(0f, 100f)] private float steerReduceStartKmh = Defaults.SteerReduceStartKmh;
+    [Tooltip("Reference speed where the steering reduction ends. The real top speed now comes from gearing and drag.")]
+    [SerializeField, Range(40f, 300f)] private float topSpeedKmh = Defaults.TopSpeedKmh;
+    [Tooltip("How fast the steering input ramps toward the key / stick (units per second). Lower = lazier.")]
+    [SerializeField, Range(0.5f, 10f)] private float steerRiseRate = Defaults.SteerRiseRate;
+    [Tooltip("How fast the steering returns to center when released. Grows with speed (self-centering).")]
+    [SerializeField, Range(0.5f, 12f)] private float steerReturnRate = Defaults.SteerReturnRate;
 
     [Header("Tires (1 = Unity default grip, higher = more grip)")]
     [SerializeField, Range(0.5f, 4f)] private float gripFront = Defaults.GripFront;
-    [Tooltip("Base sideways grip of the rear tires. Everything drift-related scales this value.")]
+    [Tooltip("Base sideways grip of the rear tires. Front vs rear is the understeer / oversteer balance.")]
     [SerializeField, Range(0.5f, 4f)] private float gripRear = Defaults.GripRear;
     [SerializeField, Range(0.5f, 4f)] private float gripForward = Defaults.GripForward;
+    [Tooltip("Slip where side grip peaks. Higher = tire needs more slip angle before it grips fully.")]
+    [SerializeField, Range(0.05f, 0.6f)] private float sidewaysPeakSlip = Defaults.SidewaysPeakSlip;
+    [Tooltip("Slip where the tire is fully sliding.")]
+    [SerializeField, Range(0.2f, 2f)] private float sidewaysSlideSlip = Defaults.SidewaysSlideSlip;
+    [Tooltip("Grip kept when fully sliding, as a fraction of peak. Lower = snappier break-away, harder to catch.")]
+    [SerializeField, Range(0.3f, 1f)] private float sidewaysSlideGrip = Defaults.SidewaysSlideGrip;
+    [Tooltip("0 = grip scales exactly with load. Higher = weight transfer costs more total grip (lift-off oversteer).")]
+    [SerializeField, Range(0f, 0.6f)] private float loadSensitivity = Defaults.LoadSensitivity;
+    [Tooltip("Forward slip (wheelspin / lockup) where side grip loss is full.")]
+    [SerializeField, Range(0.2f, 2f)] private float combinedSlipReference = Defaults.CombinedSlipReference;
+    [Tooltip("Side grip lost on a locked or fully spinning wheel. 0 = none (handbrake will not slide).")]
+    [SerializeField, Range(0f, 0.95f)] private float combinedSlipGripLoss = Defaults.CombinedSlipGripLoss;
+    [Tooltip("How fast tire grip follows load and slip. Lower = softer, higher = twitchier.")]
+    [SerializeField, Range(3f, 80f)] private float gripResponse = Defaults.GripResponse;
 
-    [Header("Drift Entry: Handbrake & Grip Transitions")]
-    [Tooltip("Rear grip multiplier while the handbrake is held (lower = slides more).")]
-    [SerializeField, Range(0.1f, 1f)] private float handbrakeGrip = Defaults.HandbrakeGrip;
-    [Tooltip("How fast rear grip is lost (grip factor per second). High = the slide starts immediately.")]
-    [SerializeField, Range(1f, 40f)] private float gripLossRate = Defaults.GripLossRate;
-    [Tooltip("How fast rear grip comes back (grip factor per second). Low = softer, no snap-back.")]
-    [SerializeField, Range(0.2f, 8f)] private float gripRecovery = Defaults.GripRecovery;
-
-    [Header("Drift Entry: Power Oversteer")]
-    [Tooltip("How much throttle + steering at speed loosens the rear. 0 = off.")]
-    [SerializeField, Range(0f, 0.8f)] private float powerOversteer = Defaults.PowerOversteer;
-    [Tooltip("Power oversteer only works above this speed.")]
-    [SerializeField, Range(10f, 150f)] private float powerOversteerMinKmh = Defaults.PowerOversteerMinKmh;
-    [Tooltip("Steering input needed before power oversteer kicks in (0..1).")]
-    [SerializeField, Range(0f, 0.9f)] private float powerOversteerMinSteer = Defaults.PowerOversteerMinSteer;
-
-    [Header("Drift Entry: Feint (weight shift)")]
-    [Tooltip("Rear grip lost after a feint (steer one way, then quickly the other). 0 = no grip loss.")]
-    [SerializeField, Range(0f, 0.8f)] private float feintGripLoss = Defaults.FeintGripLoss;
-    [Tooltip("Extra yaw kick toward the new steering direction after a feint (rad/s^2). 0 = off.")]
-    [SerializeField, Range(0f, 10f)] private float feintYawKick = Defaults.FeintYawKick;
-    [Tooltip("How long the feint effect lasts (it fades out over this time).")]
-    [SerializeField, Range(0.1f, 2f)] private float feintDuration = Defaults.FeintDuration;
-    [Tooltip("Steering input that counts as 'steering hard' for feint detection (0..1).")]
-    [SerializeField, Range(0.2f, 0.95f)] private float feintSteerThreshold = Defaults.FeintSteerThreshold;
-    [Tooltip("The second steering direction must follow the first within this many seconds.")]
-    [SerializeField, Range(0.1f, 1.5f)] private float feintWindow = Defaults.FeintWindow;
-    [Tooltip("Feints only work above this speed.")]
-    [SerializeField, Range(10f, 150f)] private float feintMinKmh = Defaults.FeintMinKmh;
-
-    [Header("Drift Detection")]
+    [Header("Drift Detection (HUD + events only)")]
     [Tooltip("Slip angle (degrees) needed to start a drift.")]
     [SerializeField, Range(3f, 45f)] private float driftEnterAngle = Defaults.DriftEnterAngle;
     [Tooltip("Slip angle below which the drift ends (lower than enter = no flicker).")]
@@ -211,31 +240,13 @@ public class WheelControll : MonoBehaviour
     [Tooltip("Seconds the slip must stay low before the drift is declared over.")]
     [SerializeField, Range(0f, 1f)] private float driftExitDelay = Defaults.DriftExitDelay;
 
-    [Header("Counter-Steer Assist")]
+    [Header("Counter-Steer Assist (set to 0 to turn off)")]
     [Tooltip("0 = off, 1 = strong. The front wheels are turned toward the direction of travel by (slip angle x this).")]
     [SerializeField, Range(0f, 1f)] private float counterSteerAssist = Defaults.CounterSteerAssist;
     [Tooltip("Slip angle (degrees) below which no counter-steer is applied.")]
     [SerializeField, Range(0f, 10f)] private float counterSteerDeadZone = Defaults.CounterSteerDeadZone;
     [Tooltip("Counter-steer fades in above this speed.")]
     [SerializeField, Range(0f, 60f)] private float counterSteerMinKmh = Defaults.CounterSteerMinKmh;
-
-    [Header("Max Drift Angle (anti spin-out)")]
-    [Tooltip("Slip angle at which the rear grip is fully restored.")]
-    [SerializeField, Range(20f, 90f)] private float maxDriftAngle = Defaults.MaxDriftAngle;
-    [Tooltip("Fraction of maxDriftAngle where grip starts coming back (0.6 = at 60%).")]
-    [SerializeField, Range(0.2f, 0.95f)] private float angleLimitStart = Defaults.AngleLimitStart;
-    [Tooltip("Rear grip multiplier at the limit (1 = normal grip, above 1 = extra bite to stop the spin).")]
-    [SerializeField, Range(1f, 3f)] private float maxAngleRearGrip = Defaults.MaxAngleRearGrip;
-    [Tooltip("Extra yaw damping near the limit. Stops the car from rotating further. 0 = off.")]
-    [SerializeField, Range(0f, 10f)] private float angleLimitYawDamping = Defaults.AngleLimitYawDamping;
-
-    [Header("Speed Retention & Holding")]
-    [Tooltip("Forward acceleration (m/s^2) added while drifting on throttle. 0 = off.")]
-    [SerializeField, Range(0f, 12f)] private float driftSpeedBoost = Defaults.DriftSpeedBoost;
-    [Tooltip("Slip angle at which the speed boost reaches full strength.")]
-    [SerializeField, Range(5f, 60f)] private float driftBoostFullAngle = Defaults.DriftBoostFullAngle;
-    [Tooltip("Rear grip multiplier kept while drifting on throttle (lower = easier to hold). Lift off to catch.")]
-    [SerializeField, Range(0.3f, 1f)] private float driftHoldGrip = Defaults.DriftHoldGrip;
 
     [Header("Stability")]
     [SerializeField, Range(0.1f, 0.6f)] private float suspensionTravel = Defaults.SuspensionTravel;
@@ -246,6 +257,8 @@ public class WheelControll : MonoBehaviour
 
     [Header("Resistance")]
     [SerializeField, Range(0f, 600f)] private float rollingResistance = Defaults.RollingResistance;
+    [Tooltip("Rolling resistance grows by this fraction per m/s of speed.")]
+    [SerializeField, Range(0f, 0.05f)] private float rollingResistanceSpeedGain = Defaults.RollingResistanceSpeedGain;
     [SerializeField, Range(0f, 2f)] private float airDrag = Defaults.AirDrag;
 
     [Header("Effects (smoke, skid marks, squeal)")]
@@ -259,6 +272,8 @@ public class WheelControll : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool showDebug = Defaults.ShowDebug;
     [SerializeField] private KeyCode debugToggleKey = KeyCode.F1;
+    [Tooltip("Full scale (+/-) of the slip angle bar in the debug HUD.")]
+    [SerializeField, Range(20f, 90f)] private float maxDriftAngle = Defaults.MaxDriftAngle;
 
     // =====================================================================
     //  PUBLIC API (read-only values + events for other scripts)
@@ -277,6 +292,8 @@ public class WheelControll : MonoBehaviour
         public float sidewaysSlip;
         /// <summary>0 = gripping, 1 = fully sliding. Use this for smoke, skid marks and sound.</summary>
         public float slip01;
+        /// <summary>Vertical load on this tire in Newtons (shows weight transfer).</summary>
+        public float load;
         public Vector3 point;
         public Vector3 normal;
     }
@@ -302,21 +319,33 @@ public class WheelControll : MonoBehaviour
     public float ThrottleInput => throttleInput;     // -1 (reverse) .. 1 (forward)
     public float SteerInput => steerInput;           // -1 (left) .. 1 (right)
     public bool HandbrakeHeld => handbrakeHeld;
-    /// <summary>Final rear grip multiplier (1 = normal, below 1 = loose).</summary>
+    /// <summary>Average rear side-grip multiplier (1 = normal, below 1 = loose or unloaded).</summary>
     public float RearGripFactor => rearGripFactor;
     /// <summary>0..1, smoothed. Feed it straight into an AudioSource volume.</summary>
     public float TireSquealVolume => squealVolume;
+    public float EngineRpm => engineOmega / RpmToRad;
+    public float IdleRpm => EngineIdleRpm;
+    public float MaxRpm => EngineLimitRpm;
+    public int Gear { get; private set; } = 1;
+    public bool IsShifting => shiftTimeRemaining > 0f;
+    public float Throttle => appliedThrottle;
+    public float Brake => brakePedal;
+    public float Handbrake => handbrakePedal;
+    public float Clutch => clutchTravel;
+    public float EngineTorqueNm { get; private set; }
+    public float DistanceMeters { get; private set; }
     public WheelSlipData GetWheelSlip(int index) => slipData[index];
 
     // =====================================================================
     //  PRIVATE STATE
     // =====================================================================
 
-    private const float RearBrakeShare = 0.6f;
-    private const float CoastBrake = 100f;
+    private const float CoastBrake = 100f;           // now only a standstill hold, engine braking does the rest
 
-    private const float SlipMinSpeed = 2f;          // m/s: below this the slip angle is meaningless
-    private const float MinRearGripFactor = 0.2f;   // floor so stacked effects can never remove all grip
+    private const float SlipMinSpeed = 2f;           // m/s: below this the slip angle is meaningless
+    private const float FlippedUpThreshold = 0.25f;  // transform.up.y below this = car is on its side / roof
+    private const float RpmToRad = 0.10471976f;      // 2*pi/60
+    private const float SteerReturnSpeedBoost = 2f;  // self-centering is this many times stronger at top speed
 
     private Rigidbody rb;
     private WheelCollider[] wheels;                 // FL, FR, BL, BR
@@ -330,22 +359,31 @@ public class WheelControll : MonoBehaviour
     private float throttleInput, steerInput;
     private bool handbrakeHeld;
 
-    private float appliedThrottle;                  // throttle after brake-first logic
+    private float appliedThrottle;                  // throttle pedal after smoothing
+    private float brakePedal;
+    private float handbrakePedal;
+    private float steerSmooth;                      // steering input after smoothing (-1..1)
 
     // motion
     private float speedMS, forwardSpeedMS, slipAngle;
     private float steerAngle;
+    private int groundedCount;
 
-    // grip
-    private float intentGrip = 1f;                  // smoothed "how loose does the driver want the rear"
-    private float rearGripFactor = 1f;              // intent blended with the max-angle limit
-    private float limit01;                          // 0 = far from max angle, 1 = at the limit
+    private bool reverseSelected;
+    private float tractionCut;
+    private float engineOmega = EngineIdleRpm * RpmToRad;
+    private float clutchEngagement, clutchTravel = 1f, filteredWheelRpm;
+    private float shiftTimeRemaining, shiftCooldown, manualShiftHold;
+    private int selectedGear = 1, queuedShift;
+    private bool limiterActive;
+    private float wheelbase, frontTrack;
+    private readonly float[] absPressure = { 1f, 1f, 1f, 1f };
 
-    // feint
-    private float feintTimer;
-    private int feintDirection;
-    private int lastStrongSteerSign;
-    private float lastStrongSteerTime = -10f;
+    private readonly float[] latGripState = { 1f, 1f, 1f, 1f };
+    private readonly float[] fwdGripState = { 1f, 1f, 1f, 1f };
+    private readonly float[] staticLoad = { 3000f, 3000f, 3000f, 3000f };
+    private float rearGripFactor = 1f;
+    private float frontGripFactor = 1f;
 
     // drift state
     private bool isDrifting;
@@ -360,6 +398,8 @@ public class WheelControll : MonoBehaviour
 #else
         rb.velocity;
 #endif
+
+    private float SteeringRatio => steerLockToLockTurns * 360f / (2f * Mathf.Max(maxSteer, 1f));
 
     // =====================================================================
     //  SETUP
@@ -379,21 +419,166 @@ public class WheelControll : MonoBehaviour
 
         rb.interpolation = RigidbodyInterpolation.Interpolate;
 
+        SortAxle(FrontLeft, FrontRight);
+        SortAxle(RearLeft, RearRight);
+        if (useFactoryTune)
+        {
+            ApplyFactoryTune();
+            FitFactoryGeometry();
+        }
+
         wheels[0].ConfigureVehicleSubsteps(5f, 12, 15);
 
         ApplyCarSetup();
         CacheMeshOffsets();
     }
 
-    // Live tuning: changing mass / COM / suspension / grip in the Inspector during Play takes effect.
+    private void OnDisable()
+    {
+        if (wheels == null)
+            return;
+
+        foreach (WheelCollider wheel in wheels)
+        {
+            if (wheel == null)
+                continue;
+
+            wheel.motorTorque = 0f;
+            wheel.brakeTorque = 0f;
+        }
+    }
+
+    // Live tuning applies chassis and tire changes during play.
     private void OnValidate()
     {
         driftExitAngle = Mathf.Min(driftExitAngle, driftEnterAngle);
-        maxDriftAngle = Mathf.Max(maxDriftAngle, driftEnterAngle + 5f);
         skidFullSlip = Mathf.Max(skidFullSlip, skidSlipThreshold + 0.1f);
+
+        sidewaysSlideSlip = Mathf.Max(sidewaysSlideSlip, sidewaysPeakSlip + 0.05f);
+        tcSlipFull = Mathf.Max(tcSlipFull, tcSlipStart + 0.1f);
 
         if (Application.isPlaying && enabled && rb != null && wheels != null)
             ApplyCarSetup();
+    }
+
+    [ContextMenu("Copy E36 M3 Factory Tune")]
+    private void ApplyFactoryTune()
+    {
+        carMass = Defaults.CarMass;
+        centerOfMassHeight = Defaults.CenterOfMassHeight;
+        frontWeightShare = Defaults.FrontWeightShare;
+        drivetrainEfficiency = Defaults.DrivetrainEfficiency;
+        maxSpeedKmh = Defaults.MaxSpeedKmh;
+        reverseSpeedKmh = Defaults.ReverseSpeedKmh;
+        lsdLock = Defaults.LsdLock;
+        lsdPreload = Defaults.LsdPreload;
+        lsdRamp = Defaults.LsdRamp;
+        brakeTorque = Defaults.BrakeTorque;
+        rearBrakeShare = Defaults.RearBrakeShare;
+        handbrakePower = Defaults.HandbrakePower;
+        throttleRiseRate = Defaults.ThrottleRise;
+        throttleFallRate = Defaults.ThrottleFall;
+        brakeRiseRate = Defaults.BrakeRise;
+        brakeFallRate = Defaults.BrakeFall;
+        handbrakeRiseRate = Defaults.HandbrakeRise;
+        handbrakeFallRate = Defaults.HandbrakeFall;
+        maxSteer = Defaults.MaxSteer;
+        steerLockToLockTurns = Defaults.LockToLockTurns;
+        steerSpeed = Defaults.SteerSpeed;
+        highSpeedSteer = Defaults.HighSpeedSteer;
+        steerReduceStartKmh = Defaults.SteerReduceStartKmh;
+        topSpeedKmh = Defaults.TopSpeedKmh;
+        steerRiseRate = Defaults.SteerRiseRate;
+        steerReturnRate = Defaults.SteerReturnRate;
+        gripFront = Defaults.GripFront;
+        gripRear = Defaults.GripRear;
+        gripForward = Defaults.GripForward;
+        sidewaysPeakSlip = Defaults.SidewaysPeakSlip;
+        sidewaysSlideSlip = Defaults.SidewaysSlideSlip;
+        sidewaysSlideGrip = Defaults.SidewaysSlideGrip;
+        loadSensitivity = Defaults.LoadSensitivity;
+        combinedSlipReference = Defaults.CombinedSlipReference;
+        combinedSlipGripLoss = Defaults.CombinedSlipGripLoss;
+        gripResponse = Defaults.GripResponse;
+        tractionControl = Defaults.TractionControl;
+        tcSlipStart = Defaults.TcSlipStart;
+        tcSlipFull = Defaults.TcSlipFull;
+        counterSteerAssist = Defaults.CounterSteerAssist;
+        suspensionTravel = Defaults.SuspensionTravel;
+        antiRoll = Defaults.AntiRoll;
+        downforce = Defaults.Downforce;
+        rollingResistance = Defaults.RollingResistance;
+        rollingResistanceSpeedGain = Defaults.RollingResistanceSpeedGain;
+        airDrag = Defaults.AirDrag;
+        showDebug = Defaults.ShowDebug;
+    }
+
+    private Vector3 WheelCenter(int index)
+    {
+        WheelCollider wheel = wheels[index];
+        return wheel.transform.TransformPoint(wheel.center);
+    }
+
+    private Vector3 AxleCenter(int left, int right) => (WheelCenter(left) + WheelCenter(right)) * 0.5f;
+
+    private void SortAxle(int left, int right)
+    {
+        if (Vector3.Dot(WheelCenter(right) - WheelCenter(left), transform.right) >= 0f)
+            return;
+
+        (wheels[left], wheels[right]) = (wheels[right], wheels[left]);
+        (meshes[left], meshes[right]) = (meshes[right], meshes[left]);
+    }
+
+    private void FitFactoryGeometry()
+    {
+        Vector3 scale = transform.lossyScale;
+        float modelWheelbase = Vector3.Dot(AxleCenter(FrontLeft, FrontRight) - AxleCenter(RearLeft, RearRight), transform.forward);
+        // The existing E36 scene rig is a two-times-scale import.
+        bool oversized = Mathf.Abs(scale.x - scale.y) < 0.01f && Mathf.Abs(scale.y - scale.z) < 0.01f &&
+            modelWheelbase > Defaults.Wheelbase * 1.5f;
+        if (oversized)
+            transform.localScale *= Defaults.Wheelbase / modelWheelbase;
+
+        Vector3 front = AxleCenter(FrontLeft, FrontRight);
+        Vector3 rear = AxleCenter(RearLeft, RearRight);
+        for (int i = 0; i < wheels.Length; i++)
+        {
+            WheelCollider wheel = wheels[i];
+            Transform mount = wheel.transform;
+            Vector3 center = WheelCenter(i);
+            if (oversized)
+            {
+                Vector3 axle = i < RearLeft ? front : rear;
+                float track = i < RearLeft ? Defaults.FrontTrack : Defaults.RearTrack;
+                float side = i == FrontLeft || i == RearLeft ? -1f : 1f;
+                center += transform.right * (side * track * 0.5f - Vector3.Dot(center - axle, transform.right));
+            }
+            mount.rotation = transform.rotation;
+            Vector3 wheelScale = mount.lossyScale;
+            mount.localScale = new Vector3(
+                mount.localScale.x / wheelScale.x,
+                mount.localScale.y / wheelScale.y,
+                mount.localScale.z / wheelScale.z);
+            wheel.center = mount.InverseTransformPoint(center);
+            wheel.radius = i < RearLeft ? Defaults.FrontTireRadius : Defaults.RearTireRadius;
+        }
+
+        // The E36 model has separate rim and tire children under each wheel group.
+        if (frontLeftMesh == null && frontRightMesh == null && backLeftMesh == null && backRightMesh == null)
+        {
+            Transform leftFrontVisual = transform.Find("RF");
+            Transform rightFrontVisual = transform.Find("LF");
+            Transform leftRearVisual = transform.Find("LB");
+            Transform rightRearVisual = transform.Find("RB");
+            if (leftFrontVisual != null && rightFrontVisual != null && leftRearVisual != null && rightRearVisual != null)
+            {
+                meshes[FrontLeft] = leftFrontVisual;
+                meshes[FrontRight] = rightFrontVisual;
+                meshes[RearLeft] = leftRearVisual;
+                meshes[RearRight] = rightRearVisual;
+            }
+        }
     }
 
     private bool WheelsAreValid()
@@ -402,14 +587,14 @@ public class WheelControll : MonoBehaviour
         {
             if (wheels[i] == null)
             {
-                Debug.LogError("[WheelControll] A WheelCollider slot is empty. Assign all 4 WheelColliders.", this);
+                Debug.LogError("[WhellContoll] A WheelCollider slot is empty. Assign all 4 WheelColliders.", this);
                 return false;
             }
             for (int j = i + 1; j < 4; j++)
             {
                 if (wheels[i] == wheels[j])
                 {
-                    Debug.LogError("[WheelControll] The same WheelCollider is assigned to more than one slot.", this);
+                    Debug.LogError("[WhellContoll] The same WheelCollider is assigned to more than one slot.", this);
                     return false;
                 }
             }
@@ -417,52 +602,47 @@ public class WheelControll : MonoBehaviour
 
         if (GetComponent<Rigidbody>() == null)
         {
-            Debug.LogError("[WheelControll] No Rigidbody found on the car root.", this);
+            Debug.LogError("[WhellContoll] No Rigidbody found on the car root.", this);
             return false;
         }
 
-        for (int i = 0; i < 4; i++)
-        {
-            if (meshes[i] == null)
-                Debug.LogWarning("[WheelControll] Wheel mesh " + i + " is not assigned. That wheel will not be animated (optional).", this);
-        }
         return true;
     }
 
-    // Mass, center of mass, suspension and tires. Safe to call again at runtime.
     private void ApplyCarSetup()
     {
         rb.mass = carMass;
+        Vector3 front = AxleCenter(FrontLeft, FrontRight);
+        Vector3 rear = AxleCenter(RearLeft, RearRight);
+        wheelbase = Mathf.Max(0.1f, Vector3.Dot(front - rear, transform.forward));
+        frontTrack = Mathf.Abs(Vector3.Dot(WheelCenter(FrontRight) - WheelCenter(FrontLeft), transform.right));
 
-        // Center of mass: middle of the wheels, dropped a bit lower (and optionally shifted).
-        Vector3 center = Vector3.zero;
-        foreach (WheelCollider w in wheels) center += w.transform.position;
-        Vector3 com = transform.InverseTransformPoint(center / 4f);
-        com.y -= comDrop;
-        com.z += comForwardShift;
-        rb.centerOfMass = com;
+        Vector3 axle = Vector3.Lerp(rear, front, frontWeightShare);
+        float averageRadius = (wheels[FrontLeft].radius + wheels[RearLeft].radius) * 0.5f;
+        // The target hub is below the top of the WheelCollider suspension ray.
+        float rideExtension = suspensionTravel * 0.45f;
+        Vector3 com = axle + transform.up * (centerOfMassHeight - averageRadius - rideExtension);
+        rb.centerOfMass = transform.InverseTransformPoint(com);
 
-        // Suspension tuned to the car's weight.
-        float sprungMass = carMass / 4f;
-        float spring = sprungMass * Physics.gravity.magnitude / (suspensionTravel * 0.25f);
-        float damper = 1.2f * Mathf.Sqrt(spring * sprungMass);
-
-        foreach (WheelCollider w in wheels)
+        for (int i = 0; i < wheels.Length; i++)
         {
-            w.suspensionDistance = suspensionTravel;
-            w.suspensionSpring = new JointSpring { spring = spring, damper = damper, targetPosition = 0.5f };
-        }
-
-        SetupTires();
-    }
-
-    // Sets the tire grip curves so the car doesn't depend on whatever values are on the WheelColliders.
-    private void SetupTires()
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            wheels[i].forwardFriction = MakeCurve(0.4f, 1f, 0.8f, 0.5f, gripForward);
-            wheels[i].sidewaysFriction = MakeCurve(0.25f, 1f, 0.6f, 0.8f, i < 2 ? gripFront : gripRear);
+            bool frontWheel = i < RearLeft;
+            WheelCollider wheel = wheels[i];
+            float supportedMass = carMass * (frontWheel ? frontWeightShare : 1f - frontWeightShare) * 0.5f;
+            staticLoad[i] = supportedMass * Physics.gravity.magnitude;
+            wheel.sprungMass = supportedMass;
+            wheel.suspensionDistance = suspensionTravel;
+            float spring = frontWheel ? 36000f : 39000f;
+            wheel.suspensionSpring = new JointSpring
+            {
+                spring = spring,
+                damper = 0.9f * Mathf.Sqrt(spring * supportedMass),
+                targetPosition = 0.32f
+            };
+            wheel.forceAppPointDistance = frontWheel ? 0.18f : 0.22f;
+            wheel.forwardFriction = MakeCurve(0.20f, 1f, 0.65f, 0.84f, gripForward);
+            wheel.sidewaysFriction = MakeCurve(sidewaysPeakSlip, 1f, sidewaysSlideSlip,
+                sidewaysSlideGrip, frontWheel ? gripFront : gripRear);
         }
     }
 
@@ -509,36 +689,15 @@ public class WheelControll : MonoBehaviour
 
     private void Update()
     {
-        throttleInput = Mathf.Clamp(Input.GetAxis("Vertical"), -1f, 1f);
-        steerInput = Mathf.Clamp(Input.GetAxis("Horizontal"), -1f, 1f);
+        // The pedals and rack already smooth these inputs in FixedUpdate.
+        throttleInput = Mathf.Clamp(Input.GetAxisRaw("Vertical"), -1f, 1f);
+        steerInput = Mathf.Clamp(Input.GetAxisRaw("Horizontal"), -1f, 1f);
         handbrakeHeld = Input.GetKey(handbrakeKey) || Input.GetKey(handbrakePadButton);
 
+        if (Input.GetKeyDown(shiftUpKey)) queuedShift = 1;
+        if (Input.GetKeyDown(shiftDownKey)) queuedShift = -1;
         if (Input.GetKeyDown(resetKey)) ResetUpright();
         if (Input.GetKeyDown(debugToggleKey)) showDebug = !showDebug;
-
-        DetectFeint();
-    }
-
-    // Feint = steer hard one way, then hard the other way within a short window, at speed.
-    // Detected here (input), applied in FixedUpdate (physics).
-    private void DetectFeint()
-    {
-        if (feintGripLoss <= 0f && feintYawKick <= 0f) return;
-        if (Mathf.Abs(steerInput) < feintSteerThreshold) return;
-
-        int sign = steerInput > 0f ? 1 : -1;
-
-        bool flipped = lastStrongSteerSign != 0 && sign != lastStrongSteerSign;
-        bool quickEnough = Time.time - lastStrongSteerTime <= feintWindow;
-
-        if (flipped && quickEnough && SpeedKmh >= feintMinKmh && feintTimer <= 0f)
-        {
-            feintTimer = feintDuration;
-            feintDirection = sign;
-        }
-
-        lastStrongSteerSign = sign;
-        lastStrongSteerTime = Time.time;
     }
 
     // =====================================================================
@@ -549,13 +708,14 @@ public class WheelControll : MonoBehaviour
     {
         float dt = Time.fixedDeltaTime;
 
-        UpdateMotion();                 // speed + slip angle (the core value)
+        UpdateMotion();
+        DistanceMeters += speedMS * dt;
         UpdateDriftState(dt);           // IsDrifting, duration, events
-        UpdateWheelSlip(dt);            // per-wheel slip, events, squeal
-        ApplyThrottleAndBrakes();
-        ApplySteering(dt);              // speed-sensitive steering + counter-steer
-        UpdateRearGrip(dt);             // handbrake / power / feint / hold / angle limit
-        ApplyDriftForces();             // speed retention, spin guard, feint kick
+        UpdateWheelSlip(dt);            // per-wheel slip + load, events, squeal
+        ApplyThrottleAndBrakes(dt);
+        ApplySteering(dt);              // smoothed, speed-sensitive steering + counter-steer
+        UpdateFrontGrip(dt);            // tire grip from load + combined slip
+        UpdateRearGrip(dt);
         ApplyResistanceAndStability();
     }
 
@@ -625,6 +785,7 @@ public class WheelControll : MonoBehaviour
     private void UpdateWheelSlip(float dt)
     {
         float maxSlip = 0f;
+        groundedCount = 0;   // used so rolling resistance stops when airborne
 
         for (int i = 0; i < 4; i++)
         {
@@ -633,8 +794,10 @@ public class WheelControll : MonoBehaviour
             if (wheels[i].GetGroundHit(out WheelHit hit))
             {
                 d.grounded = true;
+                groundedCount++;
                 d.forwardSlip = hit.forwardSlip;
                 d.sidewaysSlip = hit.sidewaysSlip;
+                d.load = hit.force;   // vertical tire load, drives the weight-transfer grip model
 
                 float magnitude = Mathf.Sqrt(hit.forwardSlip * hit.forwardSlip + hit.sidewaysSlip * hit.sidewaysSlip);
                 d.slip01 = Mathf.InverseLerp(skidSlipThreshold, skidFullSlip, magnitude);
@@ -654,64 +817,233 @@ public class WheelControll : MonoBehaviour
         squealVolume = Mathf.Lerp(squealVolume, maxSlip * movingGate, smoothing);
     }
 
-    // --- throttle & brakes --------------------------------------------------
-    private void ApplyThrottleAndBrakes()
+    private void ApplyThrottleAndBrakes(float dt)
     {
-        float throttle = throttleInput;
-        float brake = 0f;
+        bool upright = transform.up.y > FlippedUpThreshold;
+        UpdateDriveDirection();
 
-        bool oppositeInput = throttle * forwardSpeedMS < 0f && Mathf.Abs(forwardSpeedMS) > 1f;
-        if (oppositeInput)
+        float demand = reverseSelected ? -throttleInput : throttleInput;
+        float throttleTarget = upright ? Mathf.Max(0f, demand) : 0f;
+        float brakeTarget = Mathf.Max(0f, -demand);
+        float handbrakeTarget = handbrakeHeld ? 1f : 0f;
+        appliedThrottle = Mathf.MoveTowards(appliedThrottle, throttleTarget,
+            (throttleTarget > appliedThrottle ? throttleRiseRate : throttleFallRate) * dt);
+        brakePedal = Mathf.MoveTowards(brakePedal, brakeTarget,
+            (brakeTarget > brakePedal ? brakeRiseRate : brakeFallRate) * dt);
+        handbrakePedal = Mathf.MoveTowards(handbrakePedal, handbrakeTarget,
+            (handbrakeTarget > handbrakePedal ? handbrakeRiseRate : handbrakeFallRate) * dt);
+
+        UpdateTractionControl(dt);
+        UpdateGearbox(dt);
+        ApplyDriveTorque(UpdateDrivetrain(dt, upright), upright);
+
+        float hold = speedMS < 0.6f && throttleTarget < 0.05f && brakePedal < 0.05f
+            ? CoastBrake * (1f - speedMS / 0.6f) : 0f;
+
+        for (int i = 0; i < wheels.Length; i++)
         {
-            brake = brakeTorque;     // pressing S while rolling forward = brake first
-            throttle = 0f;
+            bool rear = i >= RearLeft;
+            float service = brakePedal * brakeTorque * (rear ? rearBrakeShare : 1f);
+            // Service ABS can release individual wheels. The mechanical handbrake bypasses it.
+            bool locking = antiLockBrakes && service > 0f && speedMS > 3f &&
+                slipData[i].grounded && Mathf.Abs(slipData[i].forwardSlip) > 0.25f;
+            absPressure[i] = Mathf.MoveTowards(absPressure[i], locking ? 0.15f : 1f,
+                (locking ? 12f : 5f) * dt);
+            wheels[i].brakeTorque = service * absPressure[i] + (rear ? handbrakePedal * handbrakePower : 0f) + hold;
         }
-        else if (Mathf.Abs(throttle) < 0.05f)
+    }
+
+    private void UpdateTractionControl(float dt)
+    {
+        float target = 0f;
+        if (tractionControl > 0f && groundedCount > 0 && appliedThrottle > 0.05f && brakePedal < 0.1f && handbrakePedal < 0.1f)
         {
-            brake = CoastBrake;      // light engine braking when you let off
+            float spin = Mathf.Max(Mathf.Abs(slipData[RearLeft].forwardSlip), Mathf.Abs(slipData[RearRight].forwardSlip));
+            target = tractionControl * Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(tcSlipStart, tcSlipFull, spin));
+        }
+        tractionCut = Mathf.MoveTowards(tractionCut, target, (target > tractionCut ? 12f : 4f) * dt);
+    }
+
+    // Preserve the existing brake-first W/S controls, including on a slope.
+    private void UpdateDriveDirection()
+    {
+        if (speedMS > 0.65f)
+            return;
+
+        bool wantsReverse = !reverseSelected && throttleInput < -0.12f;
+        bool wantsForward = reverseSelected && throttleInput > 0.12f;
+        if (wantsReverse || wantsForward)
+        {
+            reverseSelected = wantsReverse;
+            appliedThrottle = 0f;
+            BeginShift(reverseSelected ? -1 : 1);
+            manualShiftHold = 0f;
+            queuedShift = 0;
+        }
+    }
+
+    private static float OverallRatio(int gear)
+    {
+        return (gear < 0 ? -ReverseRatio : ForwardRatios[gear - 1]) * FinalDrive;
+    }
+
+    private float DrivenWheelRpm() => (wheels[RearLeft].rpm + wheels[RearRight].rpm) * 0.5f;
+
+    private void BeginShift(int gear)
+    {
+        selectedGear = gear;
+        shiftTimeRemaining = shiftDuration;
+        clutchEngagement = 0f;
+    }
+
+    private void UpdateGearbox(float dt)
+    {
+        shiftCooldown = Mathf.Max(0f, shiftCooldown - dt);
+        manualShiftHold = Mathf.Max(0f, manualShiftHold - dt);
+        if (IsShifting)
+        {
+            shiftTimeRemaining = Mathf.Max(0f, shiftTimeRemaining - dt);
+            if (!IsShifting)
+            {
+                Gear = selectedGear;
+                shiftCooldown = 0.22f;
+            }
+            return;
         }
 
-        appliedThrottle = throttle;
+        int shift = queuedShift;
+        queuedShift = 0;
+        if (reverseSelected || Gear < 1)
+            return;
 
-        // Engine torque fades out toward top speed instead of hitting a wall.
-        float limit = throttle >= 0f ? topSpeedKmh : reverseSpeedKmh;
-        float ratio = Mathf.Clamp01(SpeedKmh / limit);
-        float engine = throttle * enginePower * (1f - ratio * ratio);
+        // Prevent downshifts that would over-rev even if the driven wheels are sliding.
+        float roadWheelRpm = Mathf.Abs(forwardSpeedMS) / (wheels[RearLeft].radius * RpmToRad);
+        float wheelRpm = Mathf.Abs(DrivenWheelRpm());
+        float safeWheelRpm = Mathf.Max(roadWheelRpm, wheelRpm);
+        if (shift != 0)
+        {
+            int requested = Mathf.Clamp(Gear + shift, 1, ForwardRatios.Length);
+            if (requested != Gear && (shift > 0 || safeWheelRpm * OverallRatio(requested) < EngineLimitRpm - 180f))
+            {
+                BeginShift(requested);
+                manualShiftHold = 2f;
+            }
+            return;
+        }
 
-        float frontTorque = engine * (1f - rearPowerShare) * 0.5f;
-        float rearTorque = engine * rearPowerShare * 0.5f;
-        float handbrake = handbrakeHeld ? handbrakePower : 0f;
+        if (!automaticShifting || manualShiftHold > 0f || shiftCooldown > 0f ||
+            groundedCount < 2 || handbrakePedal > 0.15f)
+            return;
 
-        wheels[0].motorTorque = frontTorque;
-        wheels[1].motorTorque = frontTorque;
-        wheels[2].motorTorque = rearTorque;
-        wheels[3].motorTorque = rearTorque;
+        float rpm = Mathf.Min(wheelRpm, roadWheelRpm + 350f / OverallRatio(Gear)) * OverallRatio(Gear);
+        float upshiftRpm = Mathf.Lerp(3150f, 7410f, appliedThrottle);
+        float downshiftRpm = Mathf.Lerp(1450f, 3750f, appliedThrottle);
+        if (Gear < ForwardRatios.Length && rpm > upshiftRpm && EngineRpm > upshiftRpm - 200f)
+            BeginShift(Gear + 1);
+        else if (Gear > 1 && rpm < downshiftRpm &&
+                 safeWheelRpm * OverallRatio(Gear - 1) < Mathf.Min(upshiftRpm - 350f, EngineLimitRpm - 180f))
+            BeginShift(Gear - 1);
+    }
 
-        wheels[0].brakeTorque = brake;
-        wheels[1].brakeTorque = brake;
-        wheels[2].brakeTorque = brake * RearBrakeShare + handbrake;
-        wheels[3].brakeTorque = brake * RearBrakeShare + handbrake;
+    // Integrate crank inertia, then transfer torque through a finite-capacity slipping clutch.
+    private float UpdateDrivetrain(float dt, bool upright)
+    {
+        float ratio = OverallRatio(Gear);
+        // WheelCollider reports the last physics step's wheel speeds. Compliance in
+        // the driveline keeps that feedback from alternating between drive and braking.
+        filteredWheelRpm = Mathf.Lerp(filteredWheelRpm, DrivenWheelRpm(), 1f - Mathf.Exp(-dt / 0.10f));
+        float shaftOmega = filteredWheelRpm * RpmToRad * ratio;
+        float rpm = EngineRpm;
+        if (rpm >= EngineLimitRpm)
+            limiterActive = true;
+        else if (rpm <= EngineLimitRpm - 170f)
+            limiterActive = false;
+
+        float signedSpeed = forwardSpeedMS * 3.6f * Mathf.Sign(ratio);
+        float speedLimit = Gear < 0 ? reverseSpeedKmh : maxSpeedKmh;
+        float speedCut = Mathf.InverseLerp(speedLimit, speedLimit - 4f, signedSpeed);
+        float throttle = upright && !limiterActive && !IsShifting
+            ? appliedThrottle * (1f - tractionCut) * speedCut : 0f;
+        float pumpingLoss = 18f + 0.008f * rpm;
+        float idleTorque = Mathf.Clamp((EngineIdleRpm + 65f - rpm) * 0.4f, 0f, 95f);
+        // The curve is net crank torque at full load. Pumping loss is added on lift.
+        EngineTorqueNm = engineTorqueCurve.Evaluate(rpm) * throttle
+            - pumpingLoss * (1f - throttle) + idleTorque * (1f - throttle);
+        float freeOmega = engineOmega + EngineTorqueNm * dt / EngineInertia;
+
+        float launchRpm = Gear <= 1 ? Mathf.Lerp(EngineIdleRpm + 100f, 2900f, appliedThrottle) : EngineIdleRpm;
+        bool brakingToStop = brakePedal > 0.08f && shaftOmega < 1250f * RpmToRad;
+        bool clutchOpen = IsShifting || !upright || handbrakePedal > 0.22f || brakingToStop ||
+            (shaftOmega < EngineIdleRpm * RpmToRad && appliedThrottle < 0.04f);
+        float clutchTorque = 0f;
+        float clutchPressure = 0f;
+        if (clutchOpen)
+            clutchEngagement = 0f;
+        else
+        {
+            clutchEngagement = Mathf.MoveTowards(clutchEngagement, 1f, 7f * dt);
+            float capacity = ClutchCapacity * clutchEngagement;
+            float maxDriveTorque = capacity;
+            // Slip on launch to hold the revs up. At road speed the wheels can backdrive the engine.
+            if (shaftOmega < launchRpm * RpmToRad)
+                maxDriveTorque = Mathf.Clamp((freeOmega - launchRpm * RpmToRad) * EngineInertia / dt, 0f, capacity);
+
+            float speedDifference = freeOmega - shaftOmega;
+            clutchTorque = Mathf.Clamp(speedDifference / (dt / EngineInertia + 1f / ClutchStiffness),
+                -capacity, maxDriveTorque);
+            clutchPressure = (speedDifference > 0f ? maxDriveTorque : capacity) / ClutchCapacity;
+        }
+
+        engineOmega = Mathf.Clamp(freeOmega - clutchTorque * dt / EngineInertia,
+            EngineIdleRpm * 0.6f * RpmToRad, (EngineLimitRpm + 450f) * RpmToRad);
+        clutchTravel = 1f - clutchPressure;
+
+        return clutchTorque * ratio * drivetrainEfficiency;
+    }
+
+    private void ApplyDriveTorque(float wheelTorque, bool upright)
+    {
+        float half = upright ? wheelTorque * 0.5f : 0f;
+        float rpmDifference = wheels[RearLeft].rpm - wheels[RearRight].rpm;
+        float maxBias = Mathf.Min(Mathf.Abs(half), Mathf.Abs(half) * lsdLock + lsdPreload);
+        float bias = Mathf.Clamp(rpmDifference * lsdRamp, -maxBias, maxBias);
+        wheels[FrontLeft].motorTorque = 0f;
+        wheels[FrontRight].motorTorque = 0f;
+        wheels[RearLeft].motorTorque = half - bias;
+        wheels[RearRight].motorTorque = half + bias;
     }
 
     // --- steering -------------------------------------------------------------
     private void ApplySteering(float dt)
     {
-        // Less steering at speed.
-        float t = Mathf.InverseLerp(steerReduceStartKmh, Mathf.Max(topSpeedKmh, steerReduceStartKmh + 1f), SpeedKmh);
-        float speedFactor = Mathf.Lerp(1f, highSpeedSteer, t);
+        // the input ramps toward the key / stick and returns to center on its own.
+        // The return gets stronger with speed (self-centering).
+        bool rising = Mathf.Abs(steerInput) > Mathf.Abs(steerSmooth) && steerInput * steerSmooth >= 0f;
+        float returnBoost = Mathf.Lerp(1f, SteerReturnSpeedBoost, Mathf.Clamp01(SpeedKmh / Mathf.Max(topSpeedKmh, 1f)));
+        float inputRate = rising ? steerRiseRate : steerReturnRate * returnBoost;
+        steerSmooth = Mathf.MoveTowards(steerSmooth, steerInput, inputRate * dt);
 
-        float target = steerInput * maxSteer * speedFactor + CounterSteer();
+        float speedFactor = Mathf.Lerp(1f, highSpeedSteer,
+            Mathf.InverseLerp(steerReduceStartKmh, Mathf.Max(topSpeedKmh, steerReduceStartKmh + 1f), SpeedKmh));
+        float roadLimit = Mathf.Atan(28f * wheelbase / Mathf.Max(1f, speedMS * speedMS)) * Mathf.Rad2Deg + 2f;
+        // Give the driver more rack travel while steering into a slide.
+        if (steerSmooth * slipAngle > 0f)
+            roadLimit = Mathf.Lerp(roadLimit, maxSteer, 0.55f * Mathf.InverseLerp(8f, 34f, Mathf.Abs(slipAngle)));
+        float target = steerSmooth * Mathf.Min(maxSteer * speedFactor, roadLimit) + CounterSteer();
         target = Mathf.Clamp(target, -maxSteer, maxSteer);
 
-        steerAngle = Mathf.MoveTowards(steerAngle, target, steerSpeed * dt);
-        wheels[0].steerAngle = steerAngle;
-        wheels[1].steerAngle = steerAngle;
+        steerAngle = Mathf.MoveTowards(steerAngle, target, steerSpeed / SteeringRatio * dt);
+        float tangent = Mathf.Tan(steerAngle * Mathf.Deg2Rad);
+        float trackFactor = frontTrack * 0.4f / wheelbase;
+        wheels[FrontLeft].steerAngle = Mathf.Atan(tangent / (1f + tangent * trackFactor)) * Mathf.Rad2Deg;
+        wheels[FrontRight].steerAngle = Mathf.Atan(tangent / (1f - tangent * trackFactor)) * Mathf.Rad2Deg;
     }
 
     // Turns the front wheels toward the direction of travel.
     // The angle that points the wheels exactly along the velocity IS the slip angle,
     // so the assist is simply (slip angle - dead zone) x assist, fading in with speed.
     // The player's own steering is added on top, so steering into the slide still widens the angle.
+    // Set counterSteerAssist to 0 to turn it off.
     private float CounterSteer()
     {
         if (counterSteerAssist <= 0f) return 0f;
@@ -725,52 +1057,54 @@ public class WheelControll : MonoBehaviour
         return Mathf.Sign(slipAngle) * beyondDeadZone * counterSteerAssist * speedGate;
     }
 
-    // --- rear grip: the heart of the drift model --------------------------------
+    // --- tire grip: load sensitivity + combined slip ------------------------------
+
+    // Nothing here knows about drifting. Grip only depends on tire load and forward slip.
+    private void UpdateFrontGrip(float dt)
+    {
+        float a = UpdateWheelGrip(0, gripFront, dt);
+        float b = UpdateWheelGrip(1, gripFront, dt);
+        frontGripFactor = (a + b) * 0.5f;
+    }
+
     private void UpdateRearGrip(float dt)
     {
-        float throttle = Mathf.Max(0f, appliedThrottle);
-        float kmh = SpeedKmh;
+        float a = UpdateWheelGrip(2, gripRear, dt);
+        float b = UpdateWheelGrip(3, gripRear, dt);
+        rearGripFactor = (a + b) * 0.5f;
+    }
 
-        // 1) What does the driver want? (1 = full grip, lower = looser rear)
-        float intent = 1f;
+    // Returns the side-grip multiplier of this wheel.
+    private float UpdateWheelGrip(int i, float baseGrip, float dt)
+    {
+        WheelSlipData d = slipData[i];
+        float targetSide = 1f;
+        float targetForward = 1f;
 
-        // Handbrake
-        if (handbrakeHeld) intent *= handbrakeGrip;
-
-        // Power oversteer: hard throttle + steering at speed
-        float powerGate =
-            Mathf.InverseLerp(0.5f, 1f, throttle) *
-            Mathf.InverseLerp(powerOversteerMinKmh, powerOversteerMinKmh * 1.5f, kmh) *
-            Mathf.InverseLerp(powerOversteerMinSteer, powerOversteerMinSteer + 0.4f, Mathf.Abs(steerInput));
-        intent *= 1f - powerOversteer * powerGate;
-
-        // Feint: grip loss that fades out over feintDuration
-        if (feintTimer > 0f)
+        if (d.grounded)
         {
-            float k = Mathf.Clamp01(feintTimer / feintDuration);
-            intent *= 1f - feintGripLoss * Mathf.SmoothStep(0f, 1f, k);
-            feintTimer -= dt;
+            // Weight transfer cost: the WheelCollider already makes grip grow with load. Real tires gain
+            // less than that, so load moved between tires (braking, throttle, cornering) costs total grip.
+            float loadRatio = Mathf.Clamp(d.load / Mathf.Max(staticLoad[i], 1f), 0f, 3f);
+            float loadMul = Mathf.Clamp(1f - loadSensitivity * (loadRatio - 1f), 0.6f, 1.4f);
+
+            // Friction circle: a spinning or locked wheel has less side grip left.
+            float u = Mathf.Clamp01(Mathf.Abs(d.forwardSlip) / Mathf.Max(combinedSlipReference, 0.05f));
+            float sideKeep = 1f - combinedSlipGripLoss * Mathf.SmoothStep(0f, 1f, u);
+
+            targetSide = loadMul * sideKeep;
+            float lateralSlip = Mathf.InverseLerp(sidewaysPeakSlip, sidewaysSlideSlip, Mathf.Abs(d.sidewaysSlip));
+            targetForward = loadMul * Mathf.Lerp(1f, 0.75f, lateralSlip);
         }
 
-        // Hold: while already drifting on throttle, keep the rear a little loose. Lifting off = catch.
-        if (isDrifting && throttle > 0.3f) intent *= driftHoldGrip;
+        // Smooth it, so the grip change does not feed back into the slip and jitter.
+        float k = 1f - Mathf.Exp(-gripResponse * dt);
+        latGripState[i] = Mathf.Lerp(latGripState[i], targetSide, k);
+        fwdGripState[i] = Mathf.Lerp(fwdGripState[i], targetForward, k);
 
-        intent = Mathf.Max(intent, MinRearGripFactor);
-
-        // 2) Smooth transitions: lose grip fast, regain it slowly (no snap-back).
-        float rate = intent < intentGrip ? gripLossRate : gripRecovery;
-        intentGrip = Mathf.MoveTowards(intentGrip, intent, rate * dt);
-
-        // 3) Max drift angle: blend grip back in as the slip angle nears the limit (smoothstep).
-        float startAngle = maxDriftAngle * angleLimitStart;
-        limit01 = Mathf.InverseLerp(startAngle, maxDriftAngle, Mathf.Abs(slipAngle));
-        limit01 = limit01 * limit01 * (3f - 2f * limit01);
-
-        rearGripFactor = Mathf.Lerp(intentGrip, maxAngleRearGrip, limit01);
-
-        float rearStiffness = gripRear * rearGripFactor;
-        SetSidewaysGrip(wheels[2], rearStiffness);
-        SetSidewaysGrip(wheels[3], rearStiffness);
+        SetSidewaysGrip(wheels[i], baseGrip * latGripState[i]);
+        SetForwardGrip(wheels[i], gripForward * fwdGripState[i]);
+        return latGripState[i];
     }
 
     private void SetSidewaysGrip(WheelCollider wheel, float stiffness)
@@ -780,38 +1114,11 @@ public class WheelControll : MonoBehaviour
         wheel.sidewaysFriction = f;
     }
 
-    // --- extra forces ---------------------------------------------------------------
-    private void ApplyDriftForces()
+    private void SetForwardGrip(WheelCollider wheel, float stiffness)
     {
-        float throttle = Mathf.Max(0f, appliedThrottle);
-
-        // Speed retention: a small push (half along the nose, half along the velocity) while drifting on throttle.
-        // It scales with slip angle, fades near top speed and switches off as the car nears the max angle.
-        if (isDrifting && throttle > 0.1f && driftSpeedBoost > 0f)
-        {
-            float slipScale = Mathf.Clamp01(Mathf.Abs(slipAngle) / driftBoostFullAngle);
-            float speedRatio = Mathf.Clamp01(SpeedKmh / topSpeedKmh);
-            float boost = driftSpeedBoost * throttle * slipScale * (1f - speedRatio * speedRatio) * (1f - limit01);
-
-            Vector3 velDir = Vector3.ProjectOnPlane(Velocity, transform.up).normalized;
-            Vector3 dir = transform.forward + velDir;
-            if (dir.sqrMagnitude > 0.0001f)
-                rb.AddForce(dir.normalized * boost, ForceMode.Acceleration);
-        }
-
-        // Spin guard: damp the yaw rate near the max angle so the car can't keep rotating.
-        if (limit01 > 0f && angleLimitYawDamping > 0f)
-        {
-            float yawRate = Vector3.Dot(rb.angularVelocity, transform.up);
-            rb.AddTorque(-transform.up * (yawRate * angleLimitYawDamping * limit01), ForceMode.Acceleration);
-        }
-
-        // Feint kick: a short yaw push toward the new steering direction (the "weight shift" swing).
-        if (feintTimer > 0f && feintYawKick > 0f)
-        {
-            float k = Mathf.Clamp01(feintTimer / feintDuration);
-            rb.AddTorque(transform.up * (feintDirection * feintYawKick * k), ForceMode.Acceleration);
-        }
+        WheelFrictionCurve f = wheel.forwardFriction;
+        f.stiffness = stiffness;
+        wheel.forwardFriction = f;
     }
 
     // --- resistance & stability ---------------------------------------------------------
@@ -821,30 +1128,35 @@ public class WheelControll : MonoBehaviour
         float spd = vel.magnitude;
 
         if (spd > 0.1f)
-            rb.AddForce(-vel / spd * (rollingResistance + airDrag * spd * spd));
+        {
+
+            float rolling = rollingResistance * (1f + spd * rollingResistanceSpeedGain) * (groundedCount / 4f);
+            rb.AddForce(-vel / spd * (rolling + airDrag * spd * spd));
+        }
 
         rb.AddForce(-transform.up * downforce * spd);
 
-        ApplyAntiRoll(wheels[0], wheels[1]);
-        ApplyAntiRoll(wheels[2], wheels[3]);
+        ApplyAntiRoll(FrontLeft, FrontRight, antiRoll);
+        ApplyAntiRoll(RearLeft, RearRight, antiRoll * 0.70f);
     }
 
-    private void ApplyAntiRoll(WheelCollider left, WheelCollider right)
+    private void ApplyAntiRoll(int left, int right, float rate)
     {
-        float travelL = 1f, travelR = 1f;
+        if (!slipData[left].grounded || !slipData[right].grounded)
+            return;
 
-        bool groundedL = left.GetGroundHit(out WheelHit hit);
-        if (groundedL)
-            travelL = (-left.transform.InverseTransformPoint(hit.point).y - left.radius) / left.suspensionDistance;
+        float leftTravel = SuspensionExtension(left);
+        float rightTravel = SuspensionExtension(right);
+        float force = (leftTravel - rightTravel) * rate;
+        rb.AddForceAtPosition(-transform.up * force, WheelCenter(left));
+        rb.AddForceAtPosition(transform.up * force, WheelCenter(right));
+    }
 
-        bool groundedR = right.GetGroundHit(out hit);
-        if (groundedR)
-            travelR = (-right.transform.InverseTransformPoint(hit.point).y - right.radius) / right.suspensionDistance;
-
-        float force = (travelL - travelR) * antiRoll;
-
-        if (groundedL) rb.AddForceAtPosition(left.transform.up * -force, left.transform.position);
-        if (groundedR) rb.AddForceAtPosition(right.transform.up * force, right.transform.position);
+    private float SuspensionExtension(int index)
+    {
+        wheels[index].GetWorldPose(out Vector3 hub, out _);
+        float extension = Vector3.Dot(WheelCenter(index) - hub, transform.up);
+        return Mathf.Clamp01(extension / wheels[index].suspensionDistance);
     }
 
     // =====================================================================
@@ -876,9 +1188,27 @@ public class WheelControll : MonoBehaviour
         rb.angularVelocity = Vector3.zero;
 
         steerAngle = 0f;
-        intentGrip = 1f;
+        steerSmooth = 0f;
+        appliedThrottle = brakePedal = handbrakePedal = 0f;
+        reverseSelected = false;
+        Gear = selectedGear = 1;
+        queuedShift = 0;
+        filteredWheelRpm = 0f;
+        shiftTimeRemaining = shiftCooldown = manualShiftHold = 0f;
+        limiterActive = false;
+        engineOmega = EngineIdleRpm * RpmToRad;
+        clutchEngagement = 0f;
+        clutchTravel = 1f;
+        tractionCut = 0f;
+        for (int i = 0; i < 4; i++)
+        {
+            latGripState[i] = 1f;
+            fwdGripState[i] = 1f;
+            absPressure[i] = 1f;
+            wheels[i].motorTorque = wheels[i].brakeTorque = 0f;
+        }
         rearGripFactor = 1f;
-        feintTimer = 0f;
+        frontGripFactor = 1f;
         EndDrift();
     }
 
@@ -901,8 +1231,8 @@ public class WheelControll : MonoBehaviour
         Matrix4x4 previousMatrix = GUI.matrix;
         GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
 
-        const float w = 340f;
-        const float h = 200f;
+        const float w = 360f;
+        const float h = 235f;   // taller, 2 new lines
 
         GUI.color = new Color(0f, 0f, 0f, 0.55f);
         GUI.DrawTexture(new Rect(10f, 10f, w, h), Texture2D.whiteTexture);
@@ -917,11 +1247,16 @@ public class WheelControll : MonoBehaviour
             "Speed: " + SpeedKmh.ToString("0") + " km/h\n" +
             "Slip angle: " + slipAngle.ToString("0.0") + " deg\n" +
             "Drift time: " + DriftDuration.ToString("0.0") + " s  (last " + lastDriftDuration.ToString("0.0") + " s)\n" +
-            "Rear grip: " + rearGripFactor.ToString("0.00") + "   Angle limit: " + limit01.ToString("0.00") + "\n" +
-            "Throttle: " + throttleInput.ToString("0.00") + "   Handbrake: " + (handbrakeHeld ? "ON" : "off") + "\n" +
+            "Grip front: " + frontGripFactor.ToString("0.00") + "   rear: " + rearGripFactor.ToString("0.00") + "\n" +
+            "Throttle: " + throttleInput.ToString("0.00") + "   Handbrake: " + (handbrakeHeld ? "ON" : "off") + "   TC: " + tractionCut.ToString("0.00") + "\n" +
+            "Gear: " + (Gear < 0 ? "R" : Gear.ToString()) + "   RPM: " + EngineRpm.ToString("0") + "\n" +
+            "Steering wheel: " + (steerAngle * SteeringRatio).ToString("0") + " deg\n" +
             "Wheel slip FL/FR/RL/RR: " +
             slipData[0].slip01.ToString("0.0") + " " + slipData[1].slip01.ToString("0.0") + " " +
-            slipData[2].slip01.ToString("0.0") + " " + slipData[3].slip01.ToString("0.0");
+            slipData[2].slip01.ToString("0.0") + " " + slipData[3].slip01.ToString("0.0") + "\n" +
+            "Load FL/FR/RL/RR (kN): " +
+            (slipData[0].load / 1000f).ToString("0.0") + " " + (slipData[1].load / 1000f).ToString("0.0") + " " +
+            (slipData[2].load / 1000f).ToString("0.0") + " " + (slipData[3].load / 1000f).ToString("0.0");
 
         GUI.Label(new Rect(20f, 16f, w - 20f, h - 40f), text, debugLabel);
 
