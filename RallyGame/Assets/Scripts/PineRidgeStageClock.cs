@@ -8,7 +8,17 @@ public sealed class PineRidgeStageClock : MonoBehaviour
     [SerializeField] private StopwatchTimer timer;
     [SerializeField, Min(1f)] private float gateHalfWidth = 5.2f;
 
+    [SerializeField] private Transform[] checkpoints = System.Array.Empty<Transform>();
+
     private Vector3 previousPosition;
+    private int nextCheckpoint;
+    public int CheckpointsCleared => nextCheckpoint;
+    public int CheckpointCount => checkpoints?.Length ?? 0;
+    public bool Running => running && !finished;
+    public bool Finished => finished;
+    public bool MissedCheckpoint { get; private set; }
+    public float ElapsedSeconds => timer != null ? timer.ElapsedSeconds : 0f;
+    public float? BestSeconds { get; private set; }
     private bool running;
     private bool finished;
 
@@ -19,7 +29,17 @@ public sealed class PineRidgeStageClock : MonoBehaviour
             enabled = false;
             return;
         }
+        ResetRun();
+    }
+
+    public void ResetRun()
+    {
+        if (car == null || timer == null) return;
         previousPosition = car.position;
+        running = finished = MissedCheckpoint = false;
+        nextCheckpoint = 0;
+        timer.StopTimer();
+        timer.ResetTimer();
     }
 
     private void FixedUpdate()
@@ -32,10 +52,19 @@ public sealed class PineRidgeStageClock : MonoBehaviour
             running = true;
             timer.StartTimer();
         }
-        else if (running && Crossed(finishLine, position))
+        else if (running)
         {
-            finished = true;
-            timer.StopTimer();
+            if (nextCheckpoint < CheckpointCount && Crossed(checkpoints[nextCheckpoint], position))
+                nextCheckpoint++;
+
+            if (Crossed(finishLine, position))
+            {
+                finished = true;
+                MissedCheckpoint = nextCheckpoint < CheckpointCount;
+                timer.StopTimer();
+                if (!MissedCheckpoint && (!BestSeconds.HasValue || ElapsedSeconds < BestSeconds.Value))
+                    BestSeconds = ElapsedSeconds;
+            }
         }
 
         previousPosition = position;
@@ -43,6 +72,8 @@ public sealed class PineRidgeStageClock : MonoBehaviour
 
     private bool Crossed(Transform gate, Vector3 position)
     {
+        if (gate == null) return false;
+
         float before = Vector3.Dot(previousPosition - gate.position, gate.forward);
         float after = Vector3.Dot(position - gate.position, gate.forward);
         if (before >= 0f || after < 0f || after <= before) return false;

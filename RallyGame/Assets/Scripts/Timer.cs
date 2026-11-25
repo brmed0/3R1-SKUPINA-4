@@ -10,6 +10,8 @@ public class StopwatchTimer : MonoBehaviour
     private float elapsedTime;
     private bool running;
 
+    public float ElapsedSeconds => elapsedTime;
+
     void Start()
     {
         running = startOnAwake;

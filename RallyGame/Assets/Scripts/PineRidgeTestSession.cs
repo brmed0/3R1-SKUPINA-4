@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 [DefaultExecutionOrder(90)]
 public sealed class PineRidgeTestSession : MonoBehaviour
@@ -9,6 +9,7 @@ public sealed class PineRidgeTestSession : MonoBehaviour
         public string name;
         public string instructions;
         public Transform spawn;
+        public bool timedRally;
     }
 
     [SerializeField] private WhellContoll car;
@@ -16,6 +17,10 @@ public sealed class PineRidgeTestSession : MonoBehaviour
     [SerializeField] private Transform hub;
     [SerializeField] private Station[] stations;
     [SerializeField] private WheelCollider[] wheels;
+
+    [SerializeField] private PineRidgeStageClock rallyClock;
+    [SerializeField] private PaceNoteTrack rallyNotes;
+    [SerializeField] private GameObject rallyTimerPanel;
 
     private int station = -1;
     private readonly float[] travel = new float[4];
@@ -38,7 +43,7 @@ public sealed class PineRidgeTestSession : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.F6)) Restart(-1);
         if (Input.GetKeyDown(KeyCode.T)) Restart(station);
-        for (int i = 0; i < Mathf.Min(stations.Length, 6); i++)
+        for (int i = 0; i < Mathf.Min(stations.Length, 9); i++)
             if (Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1 + i)) ||
                 Input.GetKeyDown((KeyCode)((int)KeyCode.Keypad1 + i)))
                 Restart(i);
@@ -51,10 +56,43 @@ public sealed class PineRidgeTestSession : MonoBehaviour
         station = index;
         car.ResetVehiclePose(point.position, point.rotation);
         if (chaseCamera != null) chaseCamera.SnapToTarget();
+        ShowRally(index >= 0 && stations[index].timedRally);
         recordSpeed = peakSlide = airborne = longestFlight = 0f;
         brakeStartSpeed = brakeDistance = lastBrakeDistance = lastBrakeSpeed = 0f;
         braking = hasBrakeResult = false;
         waitForContact = 0.5f;
+    }
+
+    private void ShowRally(bool active)
+    {
+        if (rallyClock == null || rallyNotes == null || rallyTimerPanel == null) return;
+        rallyTimerPanel.SetActive(active);
+        rallyNotes.hud.gameObject.SetActive(active);
+        rallyNotes.gameObject.SetActive(active);
+        rallyClock.enabled = active;
+        if (!active) return;
+
+        rallyClock.ResetRun();
+        rallyNotes.Restart();
+    }
+
+    private string RunStatus()
+    {
+        if (station >= 0 && stations[station].timedRally && rallyClock != null)
+        {
+            if (rallyClock.MissedCheckpoint) return "Missed a checkpoint. Press T to retry.";
+            if (rallyClock.Finished)
+            {
+                string best = rallyClock.BestSeconds.HasValue ? $"   Best {rallyClock.BestSeconds.Value:F2} s" : "";
+                return $"Finish {rallyClock.ElapsedSeconds:F2} s{best}";
+            }
+            return rallyClock.Running ?
+                $"Checkpoint {rallyClock.CheckpointsCleared}/{rallyClock.CheckpointCount}" :
+                "Cross the start gate to begin timing.";
+        }
+
+        return braking ? $"Brake run   {brakeDistance:F1} m" :
+            hasBrakeResult ? $"Last stop   {lastBrakeDistance:F1} m from {lastBrakeSpeed:F0} km/h" : "Brake run   waiting";
     }
 
     private void FixedUpdate()
@@ -122,7 +160,7 @@ public sealed class PineRidgeTestSession : MonoBehaviour
         Draw(new Rect(22,y,390,3), new Color(.20f,.80f,.86f));
         GUI.Label(new Rect(36,y+10,355,30), station < 0 ? "PINE RIDGE  /  PROVING GROUND" : $"{station + 1:00}  /  {stations[station].name}", title);
         GUI.Label(new Rect(36,y+43,354,44), station < 0 ?
-            "1 Brakes   2 Suspension   3 Jump\n4 Slalom   5 Hairpin   6 Hill" : stations[station].instructions, detail);
+            "1 Brakes   2 Suspension   3 Jump   4 Slalom\n5 Hairpin   6 Hill   7 Rally Stage" : stations[station].instructions, detail);
         for (int i = 0; i < 4; i++)
         {
             float x = 36 + i * 91;
@@ -130,11 +168,9 @@ public sealed class PineRidgeTestSession : MonoBehaviour
             Draw(new Rect(x,y+109,72,5), new Color(.18f,.23f,.25f));
             Draw(new Rect(x,y+109,72 * travel[i],5), contact[i] ? new Color(.29f,.86f,.79f) : new Color(1f,.62f,.29f));
         }
-        string brake = braking ? $"Brake run   {brakeDistance:F1} m" :
-            hasBrakeResult ? $"Last stop   {lastBrakeDistance:F1} m from {lastBrakeSpeed:F0} km/h" : "Brake run   waiting";
         GUI.Label(new Rect(36,y+120,360,19), $"Peak {recordSpeed:F0} km/h    Slide {peakSlide:F0}°    Air {longestFlight:F2} s", detail);
-        GUI.Label(new Rect(36,y+141,360,19), brake, detail);
-        GUI.Label(new Rect(36,y+169,357,20), "1–6  Select test     T  Repeat     F6  Hub", mini);
+        GUI.Label(new Rect(36,y+141,360,19), RunStatus(), detail);
+        GUI.Label(new Rect(36,y+169,357,20), "1–7  Select test     T  Repeat     F6  Hub", mini);
         GUI.color = color;
         GUI.matrix = matrix;
     }
