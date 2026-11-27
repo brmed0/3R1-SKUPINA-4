@@ -124,7 +124,7 @@ public class EngineAudio : MonoBehaviour
     [Header("RPM range")]
     [Tooltip("Lowest RPM used by the audio (your idle RPM).")]
     public float minRpm = 900f;
-    [Tooltip("ON: take the max RPM from CarTelemetry.")]
+    [Tooltip("ON: follow live crank RPM and use the car's idle and maximum RPM for the audio range.")]
     public bool useTelemetryMaxRpm = true;
     public float maxRpm = 8000f;
 
@@ -237,11 +237,13 @@ public class EngineAudio : MonoBehaviour
         madeClips.Clear();
     }
 
+    private float PlaybackRpm => useTelemetryMaxRpm ? telemetry.IndicatedRpm : Mathf.Clamp(telemetry.IndicatedRpm, minRpm, maxRpm);
+
     private void Start()
     {
         lastGear = telemetry.Gear;
-        audioRpm = Mathf.Max(minRpm, telemetry.Rpm);
-        onWeight = telemetry.Throttle;
+        audioRpm = PlaybackRpm;
+        onWeight = telemetry.EngineThrottle;
         if (startEngineOnPlay) StartEngine();
     }
 
@@ -472,15 +474,15 @@ public class EngineAudio : MonoBehaviour
         if (dt <= 0f) return;
 
         float topRpm = useTelemetryMaxRpm ? telemetry.MaxRpm : maxRpm;
-        topRpm = Mathf.Max(topRpm, minRpm + 1f);
+        float idleRpm = useTelemetryMaxRpm ? telemetry.IdleRpm : minRpm;
 
-        float rpmNow = Mathf.Clamp(telemetry.Rpm, minRpm, topRpm);
+        float rpmNow = PlaybackRpm;
         audioRpm = Mathf.Lerp(audioRpm, rpmNow, 1f - Mathf.Exp(-rpmSmoothing * dt));
 
-        float throttle = telemetry.Throttle;
+        float throttle = telemetry.EngineThrottle;
         onWeight = Mathf.Lerp(onWeight, throttle, 1f - Mathf.Exp(-throttleSmoothing * dt));
 
-        float rpm01 = Mathf.InverseLerp(minRpm, topRpm, rpmNow);
+        float rpm01 = Mathf.InverseLerp(idleRpm, topRpm, rpmNow);
         int gear = telemetry.Gear;
 
         shiftTimer -= dt;
@@ -497,7 +499,7 @@ public class EngineAudio : MonoBehaviour
         lastGear = gear;
 
         // Deceleration one-shot: gas released while revs are high
-        bool lifting = throttle < 0.05f;
+        bool lifting = telemetry.Throttle < 0.05f;
         if (engineOn && lifting && !wasLifting && rpm01 > decelerationMinRpm && decelTimer <= 0f)
         {
             PlayOneShot(decelerationClip, decelerationVolume);
@@ -507,7 +509,11 @@ public class EngineAudio : MonoBehaviour
 
         // Engine fade in/out and clutch dip
         engineFade = Mathf.MoveTowards(engineFade, engineOn ? 1f : 0f, dt * 2f);
-        float master = masterVolume * engineFade * Mathf.Lerp(1f, 1f - clutchDip, telemetry.Clutch);
+        // Keep the idle audible when the clutch is open at a stop. The strongest
+        // dip should come from lifting the throttle during a gear change.
+        float clutchAttenuation = telemetry.IsShifting ? telemetry.Clutch :
+            telemetry.Clutch * Mathf.InverseLerp(telemetry.IdleRpm + 180f, 2300f, rpmNow);
+        float master = masterVolume * engineFade * Mathf.Lerp(1f, 1f - clutchDip, clutchAttenuation);
 
         // On-throttle / off-throttle blend
         float accelMul;

@@ -9128,7 +9128,6 @@ MonoBehaviour:
   shiftDownKey: 113
   drivetrainEfficiency: 0.9
   shiftDuration: 0.23
-  maxSpeedKmh: 250
   reverseSpeedKmh: 30
   lsdLock: 0.25
   lsdPreload: 35
@@ -14739,7 +14738,7 @@ MonoBehaviour:
   highClipRpm: 7000
   accelRecordings: []
   decelRecordings: []
-  minRpm: 900
+  minRpm: 780
   useTelemetryMaxRpm: 1
   maxRpm: 8000
   masterVolume: 0.6
@@ -22433,10 +22432,7 @@ MonoBehaviour:
   thickness: 11
   startAngle: -135
   sweepAngle: 270
-  smoothTime: 0.045
   amberStart: 0.65
-  redStart: 0.88
-  redlineRpm: 8000
   flashAtRedline: 1
   flashSpeed: 14
   trackColor: {r: 0.55, g: 0.75, b: 0.85, a: 0.2}

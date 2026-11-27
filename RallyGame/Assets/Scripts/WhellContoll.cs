@@ -26,7 +26,6 @@ public class WhellContoll : MonoBehaviour
         public const float RearTireRadius = (17f * 0.0254f + 2f * 0.245f * 0.40f) * 0.5f;
 
         public const float DrivetrainEfficiency = 0.90f;
-        public const float MaxSpeedKmh = 250f;
         public const float ReverseSpeedKmh = 40f;
 
         // Differential (mild LSD, ~25-30% lock)
@@ -138,19 +137,23 @@ public class WhellContoll : MonoBehaviour
     [SerializeField, Range(0.1f, 1f)] private float centerOfMassHeight = Defaults.CenterOfMassHeight;
     [SerializeField, Range(0.3f, 0.7f)] private float frontWeightShare = Defaults.FrontWeightShare;
 
-    [Header("Six speed Getrag and clutch")]
+    [Header("Six speed gearbox and clutch")]
     [SerializeField] private bool automaticShifting = true;
     [SerializeField] private KeyCode shiftUpKey = KeyCode.E;
     [SerializeField] private KeyCode shiftDownKey = KeyCode.Q;
     [SerializeField, Range(0.5f, 1f)] private float drivetrainEfficiency = Defaults.DrivetrainEfficiency;
     [SerializeField, Min(0.1f)] private float shiftDuration = 0.23f;
-    [SerializeField, Range(60f, 400f)] private float maxSpeedKmh = Defaults.MaxSpeedKmh;
     [SerializeField, Range(5f, 80f)] private float reverseSpeedKmh = Defaults.ReverseSpeedKmh;
 
-    private static readonly float[] ForwardRatios = { 4.23f, 2.51f, 1.67f, 1.23f, 1f, 0.83f };
+    // Rally ratios tuned for 7200 RPM at 45, 70, 95, 125, 160 and 185 km/h on level tarmac.
+    private static readonly float[] ForwardRatios = { 5.1058f, 3.3060f, 2.4914f, 1.9233f, 1.5242f, 1.3261f };
+    // Downshift speeds from second through sixth, in km/h.
+    private static readonly float[] DownshiftKmh = { 42f, 67f, 92f, 122f, 157f };
+    private const float AutomaticUpshiftRpm = 7200f;
     private const float ReverseRatio = 3.89f;
     private const float FinalDrive = 3.23f;
-    private const float EngineIdleRpm = 800f;
+    private const float EngineIdleRpm = 780f;
+    public const float PeakPowerRpm = 7400f;
     private const float EngineLimitRpm = 7600f;
     private const float EngineInertia = 0.26f;
     private const float ClutchCapacity = 430f;
@@ -158,9 +161,9 @@ public class WhellContoll : MonoBehaviour
 
     // Estimated full-load curve pinned to 350 Nm at 3250 and 236 kW at 7400.
     private readonly AnimationCurve engineTorqueCurve = new AnimationCurve(
-        new Keyframe(0f, 0f), new Keyframe(800f, 135f), new Keyframe(1500f, 230f),
+        new Keyframe(0f, 0f), new Keyframe(780f, 135f), new Keyframe(1500f, 230f),
         new Keyframe(2500f, 313f), new Keyframe(3250f, 350f), new Keyframe(4500f, 348f),
-        new Keyframe(5500f, 340f), new Keyframe(6500f, 326f), new Keyframe(7400f, 304.5f),
+        new Keyframe(5500f, 340f), new Keyframe(6500f, 326f), new Keyframe(PeakPowerRpm, 304.5f, -304.5f / PeakPowerRpm, -304.5f / PeakPowerRpm),
         new Keyframe(7600f, 290f), new Keyframe(8000f, 230f));
 
     [Header("Differential (mild LSD)")]
@@ -333,6 +336,7 @@ public class WhellContoll : MonoBehaviour
     public int Gear { get; private set; } = 1;
     public bool IsShifting => shiftTimeRemaining > 0f;
     public float Throttle => appliedThrottle;
+    public float EngineThrottle { get; private set; }
     public float Brake => brakePedal;
     public float Handbrake => handbrakePedal;
     public float Clutch => clutchTravel;
@@ -472,7 +476,6 @@ public class WhellContoll : MonoBehaviour
         centerOfMassHeight = Defaults.CenterOfMassHeight;
         frontWeightShare = Defaults.FrontWeightShare;
         drivetrainEfficiency = Defaults.DrivetrainEfficiency;
-        maxSpeedKmh = Defaults.MaxSpeedKmh;
         reverseSpeedKmh = Defaults.ReverseSpeedKmh;
         lsdLock = Defaults.LsdLock;
         lsdPreload = Defaults.LsdPreload;
@@ -893,7 +896,10 @@ public class WhellContoll : MonoBehaviour
 
     private static float OverallRatio(int gear)
     {
-        return (gear < 0 ? -ReverseRatio : ForwardRatios[gear - 1]) * FinalDrive;
+        if (gear < 0)
+            return -ReverseRatio * FinalDrive;
+
+        return ForwardRatios[gear - 1] * FinalDrive;
     }
 
     private float DrivenWheelRpm() => (wheels[RearLeft].rpm + wheels[RearRight].rpm) * 0.5f;
@@ -944,14 +950,16 @@ public class WhellContoll : MonoBehaviour
             groundedCount < 2 || handbrakePedal > 0.15f)
             return;
 
-        float rpm = Mathf.Min(wheelRpm, roadWheelRpm + 350f / OverallRatio(Gear)) * OverallRatio(Gear);
-        float upshiftRpm = Mathf.Lerp(3150f, 7410f, appliedThrottle);
-        float downshiftRpm = Mathf.Lerp(1450f, 3750f, appliedThrottle);
-        if (Gear < ForwardRatios.Length && rpm > upshiftRpm && EngineRpm > upshiftRpm - 200f)
-            BeginShift(Gear + 1);
-        else if (Gear > 1 && rpm < downshiftRpm &&
-                 safeWheelRpm * OverallRatio(Gear - 1) < Mathf.Min(upshiftRpm - 350f, EngineLimitRpm - 180f))
-            BeginShift(Gear - 1);
+        float roadKmh = Mathf.Max(0f, ForwardSpeedKmh);
+        // Separate up and down thresholds so a small change in speed cannot hunt
+        // between gears. After heavy braking, select the lower gear in one shift.
+        float stableWheelRpm = Mathf.Max(roadWheelRpm, Mathf.Abs(filteredWheelRpm));
+        int lower = Gear;
+        while (lower > 1 && roadKmh <= DownshiftKmh[lower - 2] &&
+               stableWheelRpm * OverallRatio(lower - 1) < EngineLimitRpm - 180f)
+            lower--;
+        if (lower != Gear)
+            BeginShift(lower);
     }
 
     // Integrate crank inertia, then transfer torque through a finite-capacity slipping clutch.
@@ -963,51 +971,109 @@ public class WhellContoll : MonoBehaviour
         filteredWheelRpm = Mathf.Lerp(filteredWheelRpm, DrivenWheelRpm(), 1f - Mathf.Exp(-dt / 0.10f));
         float shaftOmega = filteredWheelRpm * RpmToRad * ratio;
         float rpm = EngineRpm;
-        if (rpm >= EngineLimitRpm)
+        if (rpm >= EngineLimitRpm - 0.5f)
             limiterActive = true;
-        else if (rpm <= EngineLimitRpm - 170f)
+        else if (rpm <= EngineLimitRpm - 110f)
             limiterActive = false;
 
-        float signedSpeed = forwardSpeedMS * 3.6f * Mathf.Sign(ratio);
-        float speedLimit = Gear < 0 ? reverseSpeedKmh : maxSpeedKmh;
-        float speedCut = Mathf.InverseLerp(speedLimit, speedLimit - 4f, signedSpeed);
-        float throttle = upright && !limiterActive && !IsShifting
-            ? appliedThrottle * (1f - tractionCut) * speedCut : 0f;
-        float pumpingLoss = 18f + 0.008f * rpm;
-        float idleTorque = Mathf.Clamp((EngineIdleRpm + 65f - rpm) * 0.4f, 0f, 95f);
-        // The curve is net crank torque at full load. Pumping loss is added on lift.
-        EngineTorqueNm = engineTorqueCurve.Evaluate(rpm) * throttle
-            - pumpingLoss * (1f - throttle) + idleTorque * (1f - throttle);
+        float throttle = 0f;
+        if (upright && !limiterActive)
+        {
+            if (IsShifting)
+                throttle = DownshiftBlip(rpm);
+            else
+            {
+                float reverseCut = Gear < 0
+                    ? Mathf.InverseLerp(reverseSpeedKmh, reverseSpeedKmh - 4f, -ForwardSpeedKmh)
+                    : 1f;
+                throttle = appliedThrottle * (1f - tractionCut) * reverseCut;
+                if (Gear <= 1 && handbrakePedal < 0.22f)
+                    throttle = ModulateLaunchThrottle(throttle, rpm, ratio);
+            }
+        }
+
+        // Closed-throttle pumping loss rises with engine speed. The idle valve
+        // supplies just enough torque to offset it around the warm idle target.
+        float pumpingLoss = 11f + 0.007f * rpm + 0.00000055f * rpm * rpm;
+        float idleLoss = 11f + 0.007f * EngineIdleRpm + 0.00000055f * EngineIdleRpm * EngineIdleRpm;
+        float idleTorque = Mathf.Clamp(idleLoss + (EngineIdleRpm - rpm) * 0.42f, 0f, 85f);
+        float coastTorque = (idleTorque - pumpingLoss) * (1f - throttle);
+        float fullLoadTorque = engineTorqueCurve.Evaluate(rpm);
+        float firingTorque = fullLoadTorque * throttle;
+        float availableTorque = (EngineLimitRpm * RpmToRad - engineOmega) * EngineInertia / dt - coastTorque;
+        // Fuel cut limits combustion. The wheels can still back-drive the crank.
+        firingTorque = Mathf.Min(firingTorque, Mathf.Max(0f, availableTorque));
+        EngineThrottle = fullLoadTorque > 0f ? firingTorque / fullLoadTorque : 0f;
+        EngineTorqueNm = coastTorque + firingTorque;
         float freeOmega = engineOmega + EngineTorqueNm * dt / EngineInertia;
 
-        float launchRpm = Gear <= 1 ? Mathf.Lerp(EngineIdleRpm + 100f, 2900f, appliedThrottle) : EngineIdleRpm;
         bool brakingToStop = brakePedal > 0.08f && shaftOmega < 1250f * RpmToRad;
         bool clutchOpen = IsShifting || !upright || handbrakePedal > 0.22f || brakingToStop ||
             (shaftOmega < EngineIdleRpm * RpmToRad && appliedThrottle < 0.04f);
         float clutchTorque = 0f;
-        float clutchPressure = 0f;
         if (clutchOpen)
             clutchEngagement = 0f;
         else
         {
-            clutchEngagement = Mathf.MoveTowards(clutchEngagement, 1f, 7f * dt);
+            // Feed in the clutch progressively as the crank picks up and the input shaft turns.
+            // Near idle it can slip under load; once moving, the wheels can back-drive the crank.
+            float crankTakeup = Mathf.InverseLerp(EngineIdleRpm - 120f, EngineIdleRpm + 2400f, rpm);
+            float shaftTakeup = Mathf.InverseLerp(EngineIdleRpm * RpmToRad, 2200f * RpmToRad, shaftOmega);
+            float pressure = Mathf.Lerp(crankTakeup, 1f, shaftTakeup);
+            clutchEngagement = Mathf.MoveTowards(clutchEngagement, pressure, 7f * dt);
             float capacity = ClutchCapacity * clutchEngagement;
-            float maxDriveTorque = capacity;
-            // Slip on launch to hold the revs up. At road speed the wheels can backdrive the engine.
-            if (shaftOmega < launchRpm * RpmToRad)
-                maxDriveTorque = Mathf.Clamp((freeOmega - launchRpm * RpmToRad) * EngineInertia / dt, 0f, capacity);
-
             float speedDifference = freeOmega - shaftOmega;
             clutchTorque = Mathf.Clamp(speedDifference / (dt / EngineInertia + 1f / ClutchStiffness),
-                -capacity, maxDriveTorque);
-            clutchPressure = (speedDifference > 0f ? maxDriveTorque : capacity) / ClutchCapacity;
+                -capacity, capacity);
         }
 
         engineOmega = Mathf.Clamp(freeOmega - clutchTorque * dt / EngineInertia,
-            EngineIdleRpm * 0.6f * RpmToRad, (EngineLimitRpm + 450f) * RpmToRad);
-        clutchTravel = 1f - clutchPressure;
+            EngineIdleRpm * 0.6f * RpmToRad, EngineLimitRpm * RpmToRad);
+
+        // Start the shift within the physics step that crosses the threshold.
+        if (automaticShifting && !IsShifting && Gear > 0 && Gear < ForwardRatios.Length &&
+            engineOmega >= AutomaticUpshiftRpm * RpmToRad)
+        {
+            engineOmega = AutomaticUpshiftRpm * RpmToRad;
+            BeginShift(Gear + 1);
+        }
+        clutchTravel = 1f - clutchEngagement;
 
         return clutchTorque * ratio * drivetrainEfficiency;
+    }
+
+    private float ModulateLaunchThrottle(float request, float rpm, float ratio)
+    {
+        float roadSpeed = Mathf.Max(0f, forwardSpeedMS * Mathf.Sign(ratio));
+        float assistance = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(31f, 45f, roadSpeed * 3.6f));
+        if (request <= 0f || assistance <= 0f)
+            return request;
+
+        float tireRadius = (wheels[RearLeft].radius + wheels[RearRight].radius) * 0.5f;
+        float overall = Mathf.Abs(ratio);
+
+        // Estimate what the rear tires can actually put on the road. In the
+        // first gear, full crank torque can easily exceed that grip.
+        float rearLoad = Mathf.Max(0f, slipData[RearLeft].load) + Mathf.Max(0f, slipData[RearRight].load);
+        float loadTorque = rearLoad * tireRadius * gripForward / (overall * drivetrainEfficiency);
+        float tireSpeed = filteredWheelRpm * RpmToRad * tireRadius * Mathf.Sign(ratio);
+        float spin = Mathf.InverseLerp(0.8f, 4f, tireSpeed - roadSpeed);
+        float tractionTorque = Mathf.Max(45f, loadTorque) * Mathf.Lerp(1.25f, 0.50f, spin);
+
+        float engineTorque = Mathf.Max(1f, engineTorqueCurve.Evaluate(rpm));
+        float usableThrottle = Mathf.Clamp01(tractionTorque / engineTorque);
+        return Mathf.Lerp(request, Mathf.Min(request, usableThrottle), assistance);
+    }
+
+    private float DownshiftBlip(float rpm)
+    {
+        if (selectedGear <= 0 || selectedGear >= Gear)
+            return 0f;
+
+        float roadWheelRpm = Mathf.Max(0f, forwardSpeedMS) / (wheels[RearLeft].radius * RpmToRad);
+        float shaftRpm = Mathf.Max(roadWheelRpm, filteredWheelRpm) * OverallRatio(selectedGear);
+        float target = Mathf.Clamp(shaftRpm, EngineIdleRpm, EngineLimitRpm - 180f);
+        return 0.60f * Mathf.InverseLerp(80f, 1800f, target - rpm);
     }
 
     private void ApplyDriveTorque(float wheelTorque, bool upright)
@@ -1223,6 +1289,7 @@ public class WhellContoll : MonoBehaviour
         steerSmooth = 0f;
         speedMS = forwardSpeedMS = slipAngle = 0f;
         appliedThrottle = brakePedal = handbrakePedal = 0f;
+        EngineThrottle = EngineTorqueNm = 0f;
         reverseSelected = false;
         Gear = selectedGear = 1;
         queuedShift = 0;
