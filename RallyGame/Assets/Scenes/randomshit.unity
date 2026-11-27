@@ -4477,6 +4477,143 @@ MonoBehaviour:
   markerStartUVY: 0.5577316
   customPoints: []
   handleObject: {fileID: 0}
+--- !u!1 &224216775
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 224216776}
+  - component: {fileID: 224216778}
+  - component: {fileID: 224216777}
+  m_Layer: 0
+  m_Name: __RALLYHUD_ONE_SCRIPT_SpeedText
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &224216776
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 224216775}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 948904044}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -63}
+  m_SizeDelta: {x: 190, y: 54}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &224216777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 224216775}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: 000
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4294966005
+  m_fontColor: {r: 0.96, g: 0.98, b: 1, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 48
+  m_fontSizeBase: 48
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 1
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 0
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656bu
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!222 &224216778
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 224216775}
+  m_CullTransparentMesh: 1
 --- !u!1 &227815609
 GameObject:
   m_ObjectHideFlags: 0
@@ -5080,7 +5217,6 @@ MonoBehaviour:
   shiftDownKey: 113
   drivetrainEfficiency: 0.9
   shiftDuration: 0.23
-  maxSpeedKmh: 250
   reverseSpeedKmh: 30
   lsdLock: 0.25
   lsdPreload: 35
@@ -6853,143 +6989,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 324862644}
   m_Mesh: {fileID: -6874796699695714012, guid: 5e06c70254bb3dd4aa65f9dd079ddd6c, type: 3}
---- !u!1 &327310882
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 327310883}
-  - component: {fileID: 327310885}
-  - component: {fileID: 327310884}
-  m_Layer: 0
-  m_Name: __RALLYHUD_ONE_SCRIPT_SpeedUnit
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &327310883
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 327310882}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 948904044}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -99}
-  m_SizeDelta: {x: 120, y: 18}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &327310884
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 327310882}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: KM/H
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 3871518092
-  m_fontColor: {r: 0.55, g: 0.68, b: 0.76, a: 0.9}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 13
-  m_fontSizeBase: 13
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 1
-  m_HorizontalAlignment: 2
-  m_VerticalAlignment: 512
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_characterHorizontalScale: 1
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 0
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_EmojiFallbackSupport: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!222 &327310885
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 327310882}
-  m_CullTransparentMesh: 1
 --- !u!1 &333292590
 GameObject:
   m_ObjectHideFlags: 0
@@ -10577,7 +10576,6 @@ MonoBehaviour:
   shiftDownKey: 113
   drivetrainEfficiency: 0.9
   shiftDuration: 0.23
-  maxSpeedKmh: 250
   reverseSpeedKmh: 30
   lsdLock: 0.25
   lsdPreload: 35
@@ -10597,7 +10595,7 @@ MonoBehaviour:
   handbrakeFallRate: 7
   maxSteer: 30
   steerLockToLockTurns: 3
-  steerSpeed: 300
+  steerSpeed: 140
   highSpeedSteer: 0.35
   steerReduceStartKmh: 30
   topSpeedKmh: 160
@@ -13917,6 +13915,118 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 632054930}
   m_Mesh: {fileID: -5610546232409714510, guid: 5e06c70254bb3dd4aa65f9dd079ddd6c, type: 3}
+--- !u!1 &633757935
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 633757936}
+  - component: {fileID: 633757937}
+  m_Layer: 0
+  m_Name: EngineAudio
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &633757936
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 633757935}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0.68157464, z: 0, w: 0.7317486}
+  m_LocalPosition: {x: 6.1382837, y: -0.29392004, z: 5.147489}
+  m_LocalScale: {x: 0.50000006, y: 0.5, z: 0.50000006}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 543450653283814194}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &633757937
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 633757935}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1271f1673f56a684b82566da27bfff28, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EngineAudio
+  telemetry: {fileID: 458419420}
+  startClip: {fileID: 0}
+  shiftClip: {fileID: 8300000, guid: 55cd142ce27196e43bce5ab84c8af175, type: 3}
+  decelerationClip: {fileID: 8300000, guid: 33b72e87817f77c41b6518418025cca0, type: 3}
+  startEngineOnPlay: 1
+  startOverlap: 0.7
+  shiftVolume: 1
+  decelerationVolume: 0.8
+  playShiftOnDownshift: 0
+  decelerationMinRpm: 0.5
+  autoSlices:
+  - label: Low
+    clip: {fileID: 8300000, guid: 938a0b06b8938324795b5a1993b7085f, type: 3}
+    volume: 0.6
+    rpmFrom: 900
+    rpmTo: 2500
+    sliceSeconds: 0.7
+    chunkSeconds: 0.1
+    chunkPosition: 0.5
+    seamFade: 0.1
+  - label: Mid
+    clip: {fileID: 8300000, guid: e281ad992a073ca45a9246ae1ce4e733, type: 3}
+    volume: 0.6
+    rpmFrom: 2500
+    rpmTo: 4800
+    sliceSeconds: 0.7
+    chunkSeconds: 0.1
+    chunkPosition: 0.5
+    seamFade: 0.1
+  - label: High
+    clip: {fileID: 8300000, guid: 727620a644d313943a19b68760602470, type: 3}
+    volume: 0.6
+    rpmFrom: 4800
+    rpmTo: 7600
+    sliceSeconds: 0.7
+    chunkSeconds: 0.1
+    chunkPosition: 0.5
+    seamFade: 0.1
+  idleClip: {fileID: 8300000, guid: 2820319cb74c0734488b6ddc47c5abfb, type: 3}
+  idleClipRpm: 900
+  lowRpmClip: {fileID: 0}
+  lowClipRpm: 2700
+  midRpmClip: {fileID: 0}
+  midClipRpm: 4800
+  highRpmClip: {fileID: 0}
+  highClipRpm: 7000
+  accelRecordings: []
+  decelRecordings: []
+  minRpm: 780
+  useTelemetryMaxRpm: 1
+  maxRpm: 8000
+  masterVolume: 0.6
+  offThrottleVolume: 0.6
+  decelSetVolume: 1
+  clutchDip: 0.4
+  rpmSmoothing: 20
+  volumeSmoothing: 20
+  throttleSmoothing: 6
+  crossfadeWidth: 0.8
+  pitchFollow: 0.75
+  minPitch: 0.6
+  maxPitch: 1.8
+  scrubWindow: 0.12
+  scrubCrossfade: 0.12
+  spatialBlend: 0
+  priority: 100
+  outputMixerGroup: {fileID: 0}
+  showDebug: 1
 --- !u!1 &634604651
 GameObject:
   m_ObjectHideFlags: 0
@@ -17478,126 +17588,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 808586315}
   m_Mesh: {fileID: -5482170915565386788, guid: 5e06c70254bb3dd4aa65f9dd079ddd6c, type: 3}
---- !u!1 &809450383
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 809450384}
-  - component: {fileID: 809450385}
-  m_Layer: 0
-  m_Name: EngineAudio
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &809450384
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 809450383}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.68157464, z: 0, w: 0.7317486}
-  m_LocalPosition: {x: -0.8593909, y: 0.5280762, z: 1.9661928}
-  m_LocalScale: {x: 1.0018519, y: 1.0018518, z: 1.0018519}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 543450653283814194}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &809450385
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 809450383}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 054010a2223726b4591a8107a836a2a4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EngineAudio
-  telemetry: {fileID: 458419420}
-  startClip: {fileID: 0}
-  shiftClip: {fileID: 0}
-  decelerationClip: {fileID: 0}
-  startEngineOnPlay: 1
-  startOverlap: 0.7
-  shiftVolume: 0.8
-  decelerationVolume: 0.8
-  playShiftOnDownshift: 0
-  decelerationMinRpm: 0.5
-  layers:
-  - name: Engine
-    volume: 0.3
-    onClips:
-    - {fileID: 8300000, guid: 03ca150548021294aa03233df7f80e45, type: 3}
-    - {fileID: 8300000, guid: 4d5c018d9507af14fbd76c90f18a4337, type: 3}
-    - {fileID: 8300000, guid: 4157daaf62822ee43a941766f3ad0ff7, type: 3}
-    - {fileID: 8300000, guid: b378aba393214e84082e44b342a4a3db, type: 3}
-    - {fileID: 8300000, guid: 35cba904f999a8f469cb3a66bbc215b4, type: 3}
-    - {fileID: 8300000, guid: a03d43db5133771428c82bae74bb8b0d, type: 3}
-    - {fileID: 8300000, guid: 200675db1571355429a7f663e883de52, type: 3}
-    - {fileID: 8300000, guid: 5126e4fb66658c843a35ad74e8c55aaf, type: 3}
-    - {fileID: 8300000, guid: 451728352d86e9041bc47a6c46109f66, type: 3}
-    - {fileID: 8300000, guid: 9bb87ba4ef5cad94dad4b42c5120b18d, type: 3}
-    - {fileID: 8300000, guid: 9aa291b15fce43b4491a0dfdf509db05, type: 3}
-    onClipRpm: []
-    offClips: []
-    offClipRpm: []
-    offThrottleVolume: 0.7
-    overrevAmount: 1
-  - name: Exhaust
-    volume: 0.8
-    onClips:
-    - {fileID: 8300000, guid: cd840f22d0433d344952fbc52e135bc9, type: 3}
-    - {fileID: 8300000, guid: 30c64af7c368022408d069f738315834, type: 3}
-    - {fileID: 8300000, guid: 48067cbed3150794db1dbb1eed002903, type: 3}
-    - {fileID: 8300000, guid: 45468054578215643907be4049c3d888, type: 3}
-    - {fileID: 8300000, guid: f8644f89ac520ac4bba60a02c990e48d, type: 3}
-    - {fileID: 8300000, guid: b75624d008eea5a438ea7d6f7c44e7bb, type: 3}
-    - {fileID: 8300000, guid: 54a869ef4f62438468cb1a7706078b36, type: 3}
-    - {fileID: 8300000, guid: 7c354ecf808afa545ab8715784fd2649, type: 3}
-    - {fileID: 8300000, guid: 6d86acc4b8d9960418704a595c5616e2, type: 3}
-    - {fileID: 8300000, guid: a9bb7dc90f3d4534183945f33b2535bf, type: 3}
-    - {fileID: 8300000, guid: 60d863186ad825e48a1ecf7d5357a1f2, type: 3}
-    - {fileID: 8300000, guid: 0116d5a05fee1e54a9b2c1755a4a40d6, type: 3}
-    onClipRpm: []
-    offClips: []
-    offClipRpm: []
-    offThrottleVolume: 0.45
-    overrevAmount: 1
-  minRpm: 800
-  useTelemetryMaxRpm: 1
-  maxRpm: 7200
-  overrevEnabled: 1
-  overrevStartRpm: 0
-  overrevRpm: 7200
-  overrevPitch: 1.05
-  overrevVolume: 1.1
-  overrevBassVolume: 0.35
-  overrevBassPitch: 0.5
-  overrevBassCutoff: 600
-  overrevDistortion: 0
-  masterVolume: 0.5
-  clutchDip: 0.4
-  rpmSmoothing: 20
-  volumeSmoothing: 20
-  throttleSmoothing: 6
-  crossfadeWidth: 0.8
-  pitchFollow: 1
-  minPitch: 0.5
-  maxPitch: 2
-  loopSeamFade: 0
-  spatialBlend: 0
-  priority: 100
-  outputMixerGroup: {fileID: 0}
-  showDebug: 0
 --- !u!1 &810502476
 GameObject:
   m_ObjectHideFlags: 0
@@ -18392,6 +18382,143 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 869301350}
   m_Mesh: {fileID: -5296308260564444024, guid: 5e06c70254bb3dd4aa65f9dd079ddd6c, type: 3}
+--- !u!1 &872443654
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 872443655}
+  - component: {fileID: 872443657}
+  - component: {fileID: 872443656}
+  m_Layer: 0
+  m_Name: __RALLYHUD_ONE_SCRIPT_GearText
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &872443655
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 872443654}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 948904044}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 12}
+  m_SizeDelta: {x: 180, y: 80}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &872443656
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 872443654}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: 1
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4294957325
+  m_fontColor: {r: 0.05, g: 0.85, b: 1, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 76
+  m_fontSizeBase: 76
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 1
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 0
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656bu
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!222 &872443657
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 872443654}
+  m_CullTransparentMesh: 1
 --- !u!1001 &878528522
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -20443,10 +20570,10 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1879795355}
-  - {fileID: 1702768797}
-  - {fileID: 1826085902}
-  - {fileID: 327310883}
+  - {fileID: 1034576594}
+  - {fileID: 872443655}
+  - {fileID: 224216776}
+  - {fileID: 2029438028}
   m_Father: {fileID: 1394015241}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -20479,10 +20606,7 @@ MonoBehaviour:
   thickness: 11
   startAngle: -135
   sweepAngle: 270
-  smoothTime: 0.045
   amberStart: 0.65
-  redStart: 0.88
-  redlineRpm: 8000
   flashAtRedline: 1
   flashSpeed: 14
   trackColor: {r: 0.55, g: 0.75, b: 0.85, a: 0.2}
@@ -22224,6 +22348,143 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1031256428}
   m_Mesh: {fileID: -2851411217590878777, guid: 5e06c70254bb3dd4aa65f9dd079ddd6c, type: 3}
+--- !u!1 &1034576593
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1034576594}
+  - component: {fileID: 1034576596}
+  - component: {fileID: 1034576595}
+  m_Layer: 0
+  m_Name: __RALLYHUD_ONE_SCRIPT_RPMText
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1034576594
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034576593}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 948904044}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 107}
+  m_SizeDelta: {x: 340, y: 28}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1034576595
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034576593}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: RPM  0800  /  7600
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4294957325
+  m_fontColor: {r: 0.05, g: 0.85, b: 1, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 18
+  m_fontSizeBase: 18
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 1
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 0
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656bu
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!222 &1034576596
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034576593}
+  m_CullTransparentMesh: 1
 --- !u!1 &1037009881
 GameObject:
   m_ObjectHideFlags: 0
@@ -48735,143 +48996,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1697628516}
   m_Mesh: {fileID: 5600255544074246813, guid: 5e06c70254bb3dd4aa65f9dd079ddd6c, type: 3}
---- !u!1 &1702768796
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1702768797}
-  - component: {fileID: 1702768799}
-  - component: {fileID: 1702768798}
-  m_Layer: 0
-  m_Name: __RALLYHUD_ONE_SCRIPT_GearText
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1702768797
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1702768796}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 948904044}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 12}
-  m_SizeDelta: {x: 180, y: 80}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1702768798
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1702768796}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: 1
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4294957325
-  m_fontColor: {r: 0.05, g: 0.85, b: 1, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 76
-  m_fontSizeBase: 76
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 1
-  m_HorizontalAlignment: 2
-  m_VerticalAlignment: 512
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_characterHorizontalScale: 1
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 0
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_EmojiFallbackSupport: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!222 &1702768799
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1702768796}
-  m_CullTransparentMesh: 1
 --- !u!1 &1703758091
 GameObject:
   m_ObjectHideFlags: 0
@@ -51529,143 +51653,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1823722528}
   m_Mesh: {fileID: 7216145881591220221, guid: 5e06c70254bb3dd4aa65f9dd079ddd6c, type: 3}
---- !u!1 &1826085901
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1826085902}
-  - component: {fileID: 1826085904}
-  - component: {fileID: 1826085903}
-  m_Layer: 0
-  m_Name: __RALLYHUD_ONE_SCRIPT_SpeedText
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1826085902
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1826085901}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 948904044}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -63}
-  m_SizeDelta: {x: 190, y: 54}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1826085903
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1826085901}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: 000
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4294966005
-  m_fontColor: {r: 0.96, g: 0.98, b: 1, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 48
-  m_fontSizeBase: 48
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 1
-  m_HorizontalAlignment: 2
-  m_VerticalAlignment: 512
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_characterHorizontalScale: 1
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 0
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_EmojiFallbackSupport: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!222 &1826085904
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1826085901}
-  m_CullTransparentMesh: 1
 --- !u!1 &1829483265
 GameObject:
   m_ObjectHideFlags: 0
@@ -52910,143 +52897,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1874715376}
   m_Mesh: {fileID: -9015115999524468081, guid: 5e06c70254bb3dd4aa65f9dd079ddd6c, type: 3}
---- !u!1 &1879795354
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1879795355}
-  - component: {fileID: 1879795357}
-  - component: {fileID: 1879795356}
-  m_Layer: 0
-  m_Name: __RALLYHUD_ONE_SCRIPT_RPMText
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1879795355
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1879795354}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 948904044}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 107}
-  m_SizeDelta: {x: 340, y: 28}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1879795356
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1879795354}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: RPM  0800  /  7600
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4294957325
-  m_fontColor: {r: 0.05, g: 0.85, b: 1, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 18
-  m_fontSizeBase: 18
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 1
-  m_HorizontalAlignment: 2
-  m_VerticalAlignment: 512
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_characterHorizontalScale: 1
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 0
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 0
-  m_ActiveFontFeatures: 6e72656bu
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_EmojiFallbackSupport: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!222 &1879795357
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1879795354}
-  m_CullTransparentMesh: 1
 --- !u!1 &1884244529
 GameObject:
   m_ObjectHideFlags: 0
@@ -55825,6 +55675,143 @@ Texture2D:
     offset: 0
     size: 0
     path: 
+--- !u!1 &2029438027
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2029438028}
+  - component: {fileID: 2029438030}
+  - component: {fileID: 2029438029}
+  m_Layer: 0
+  m_Name: __RALLYHUD_ONE_SCRIPT_SpeedUnit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &2029438028
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2029438027}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 948904044}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -99}
+  m_SizeDelta: {x: 120, y: 18}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &2029438029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2029438027}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: KM/H
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 3871518092
+  m_fontColor: {r: 0.55, g: 0.68, b: 0.76, a: 0.9}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 13
+  m_fontSizeBase: 13
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 1
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 0
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656bu
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!222 &2029438030
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2029438027}
+  m_CullTransparentMesh: 1
 --- !u!114 &2029824178
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -60326,7 +60313,7 @@ Transform:
   m_LocalScale: {x: 0.9981516, y: 0.9981516, z: 0.9981516}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 809450384}
+  - {fileID: 633757936}
   - {fileID: 4734220790803876392}
   - {fileID: 8114351038438442186}
   - {fileID: 8560519380515137526}
@@ -62521,36 +62508,23 @@ MonoBehaviour:
   decelerationVolume: 0.8
   playShiftOnDownshift: 0
   decelerationMinRpm: 0.5
-  layers:
-  - name: Engine
-    volume: 0.8
-    onClips: []
-    onClipRpm: []
-    offClips: []
-    offClipRpm: []
-    offThrottleVolume: 0.7
-    overrevAmount: 1
-  - name: Exhaust
-    volume: 0.9
-    onClips: []
-    onClipRpm: []
-    offClips: []
-    offClipRpm: []
-    offThrottleVolume: 0.45
-    overrevAmount: 1
+  autoSlices: []
+  idleClip: {fileID: 0}
+  idleClipRpm: 900
+  lowRpmClip: {fileID: 0}
+  lowClipRpm: 2700
+  midRpmClip: {fileID: 0}
+  midClipRpm: 4800
+  highRpmClip: {fileID: 0}
+  highClipRpm: 7000
+  accelRecordings: []
+  decelRecordings: []
   minRpm: 900
   useTelemetryMaxRpm: 1
-  maxRpm: 7200
-  overrevEnabled: 1
-  overrevStartRpm: 0
-  overrevRpm: 7200
-  overrevPitch: 1.05
-  overrevVolume: 1.1
-  overrevBassVolume: 0.35
-  overrevBassPitch: 0.5
-  overrevBassCutoff: 600
-  overrevDistortion: 0
+  maxRpm: 8000
   masterVolume: 1
+  offThrottleVolume: 0.6
+  decelSetVolume: 1
   clutchDip: 0.4
   rpmSmoothing: 20
   volumeSmoothing: 20
@@ -62559,22 +62533,12 @@ MonoBehaviour:
   pitchFollow: 0.75
   minPitch: 0.85
   maxPitch: 1.2
-  loopSeamFade: 0
+  scrubWindow: 0.12
+  scrubCrossfade: 0.12
   spatialBlend: 0
   priority: 100
   outputMixerGroup: {fileID: 0}
   showDebug: 0
-  oneShotSrc: {fileID: 0}
-  audioRpm: 0
-  onWeight: 0
-  engineFade: 0
-  engineOn: 0
-  starting: 0
-  wasLifting: 1
-  lastGear: 1
-  shiftTimer: 0
-  decelTimer: 0
-  debugOver: 0
 --- !u!114 &919132149613842826
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -62597,36 +62561,23 @@ MonoBehaviour:
   decelerationVolume: 0.8
   playShiftOnDownshift: 0
   decelerationMinRpm: 0.5
-  layers:
-  - name: Engine
-    volume: 0.8
-    onClips: []
-    onClipRpm: []
-    offClips: []
-    offClipRpm: []
-    offThrottleVolume: 0.7
-    overrevAmount: 1
-  - name: Exhaust
-    volume: 0.9
-    onClips: []
-    onClipRpm: []
-    offClips: []
-    offClipRpm: []
-    offThrottleVolume: 0.45
-    overrevAmount: 1
+  autoSlices: []
+  idleClip: {fileID: 0}
+  idleClipRpm: 900
+  lowRpmClip: {fileID: 0}
+  lowClipRpm: 2700
+  midRpmClip: {fileID: 0}
+  midClipRpm: 4800
+  highRpmClip: {fileID: 0}
+  highClipRpm: 7000
+  accelRecordings: []
+  decelRecordings: []
   minRpm: 900
   useTelemetryMaxRpm: 1
-  maxRpm: 7200
-  overrevEnabled: 1
-  overrevStartRpm: 0
-  overrevRpm: 7200
-  overrevPitch: 1.05
-  overrevVolume: 1.1
-  overrevBassVolume: 0.35
-  overrevBassPitch: 0.5
-  overrevBassCutoff: 600
-  overrevDistortion: 0
+  maxRpm: 8000
   masterVolume: 1
+  offThrottleVolume: 0.6
+  decelSetVolume: 1
   clutchDip: 0.4
   rpmSmoothing: 20
   volumeSmoothing: 20
@@ -62635,22 +62586,12 @@ MonoBehaviour:
   pitchFollow: 0.75
   minPitch: 0.85
   maxPitch: 1.2
-  loopSeamFade: 0
+  scrubWindow: 0.12
+  scrubCrossfade: 0.12
   spatialBlend: 0
   priority: 100
   outputMixerGroup: {fileID: 0}
   showDebug: 0
-  oneShotSrc: {fileID: 0}
-  audioRpm: 0
-  onWeight: 0
-  engineFade: 0
-  engineOn: 0
-  starting: 0
-  wasLifting: 1
-  lastGear: 1
-  shiftTimer: 0
-  decelTimer: 0
-  debugOver: 0
 --- !u!114 &919132149613842827
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -62673,36 +62614,23 @@ MonoBehaviour:
   decelerationVolume: 0.8
   playShiftOnDownshift: 0
   decelerationMinRpm: 0.5
-  layers:
-  - name: Engine
-    volume: 0.8
-    onClips: []
-    onClipRpm: []
-    offClips: []
-    offClipRpm: []
-    offThrottleVolume: 0.7
-    overrevAmount: 1
-  - name: Exhaust
-    volume: 0.9
-    onClips: []
-    onClipRpm: []
-    offClips: []
-    offClipRpm: []
-    offThrottleVolume: 0.45
-    overrevAmount: 1
+  autoSlices: []
+  idleClip: {fileID: 0}
+  idleClipRpm: 900
+  lowRpmClip: {fileID: 0}
+  lowClipRpm: 2700
+  midRpmClip: {fileID: 0}
+  midClipRpm: 4800
+  highRpmClip: {fileID: 0}
+  highClipRpm: 7000
+  accelRecordings: []
+  decelRecordings: []
   minRpm: 900
   useTelemetryMaxRpm: 1
-  maxRpm: 7200
-  overrevEnabled: 1
-  overrevStartRpm: 0
-  overrevRpm: 7200
-  overrevPitch: 1.05
-  overrevVolume: 1.1
-  overrevBassVolume: 0.35
-  overrevBassPitch: 0.5
-  overrevBassCutoff: 600
-  overrevDistortion: 0
+  maxRpm: 8000
   masterVolume: 1
+  offThrottleVolume: 0.6
+  decelSetVolume: 1
   clutchDip: 0.4
   rpmSmoothing: 20
   volumeSmoothing: 20
@@ -62711,22 +62639,12 @@ MonoBehaviour:
   pitchFollow: 0.75
   minPitch: 0.85
   maxPitch: 1.2
-  loopSeamFade: 0
+  scrubWindow: 0.12
+  scrubCrossfade: 0.12
   spatialBlend: 0
   priority: 100
   outputMixerGroup: {fileID: 0}
   showDebug: 0
-  oneShotSrc: {fileID: 0}
-  audioRpm: 0
-  onWeight: 0
-  engineFade: 0
-  engineOn: 0
-  starting: 0
-  wasLifting: 1
-  lastGear: 1
-  shiftTimer: 0
-  decelTimer: 0
-  debugOver: 0
 --- !u!23 &921502417978772907
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -101078,7 +100996,6 @@ MonoBehaviour:
   shiftDownKey: 113
   drivetrainEfficiency: 0.9
   shiftDuration: 0.23
-  maxSpeedKmh: 250
   reverseSpeedKmh: 30
   lsdLock: 0.25
   lsdPreload: 35

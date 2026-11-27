@@ -15,12 +15,9 @@ public class HudGauge : MaskableGraphic
     [SerializeField] private float thickness = 11f;
     [SerializeField] private float startAngle = -135f;
     [SerializeField] private float sweepAngle = 270f;
-    [SerializeField] private float smoothTime = 0.045f;
 
     [Header("Shift Points")]
     [SerializeField, Range(0f, 1f)] private float amberStart = 0.65f;
-    [SerializeField, Range(0f, 1f)] private float redStart = 0.88f;
-    [SerializeField] private float redlineRpm = 7000f;
     [SerializeField] private bool flashAtRedline = true;
     [SerializeField] private float flashSpeed = 14f;
 
@@ -46,8 +43,8 @@ public class HudGauge : MaskableGraphic
     private TMP_Text speedText;
 
     private float displayedRatio;
-    private float ratioVelocity;
-    private float flashThreshold = 0.88f;
+    private float redStart = 1f;
+    private float redline = 1f;
     private bool flashing;
 
     private int lastSpeed = int.MinValue;
@@ -98,9 +95,6 @@ public class HudGauge : MaskableGraphic
         }
         else
         {
-            displayedRatio = Mathf.Clamp01(
-                telemetry.Rpm / Mathf.Max(1f, telemetry.MaxRpm));
-
             UpdateHud(true);
         }
 
@@ -117,9 +111,8 @@ public class HudGauge : MaskableGraphic
 
     private void UpdateHud(bool force)
     {
-        float maxRpm = Mathf.Max(1f, telemetry.MaxRpm);
-        float rpm = Mathf.Clamp(telemetry.Rpm, 0f, maxRpm);
-        float ratio = Mathf.Clamp01(rpm / maxRpm);
+        float rpm = telemetry.IndicatedRpm;
+        float ratio = Mathf.Clamp01(rpm / CarTelemetry.TachometerScaleRpm);
 
         int speed = Mathf.Max(
             0, Mathf.RoundToInt(telemetry.SpeedKmh));
@@ -148,25 +141,19 @@ public class HudGauge : MaskableGraphic
 
             rpmText.text =
                 "RPM  " + roundedRpm.ToString("0000") +
-                "  /  " + Mathf.RoundToInt(maxRpm).ToString("0000");
+                "  /  " + Mathf.RoundToInt(CarTelemetry.TachometerScaleRpm).ToString("0000");
         }
 
         float previousRatio = displayedRatio;
         bool previousFlash = flashing;
 
-        displayedRatio = Mathf.SmoothDamp(
-            displayedRatio,
-            ratio,
-            ref ratioVelocity,
-            Mathf.Max(0.001f, smoothTime),
-            Mathf.Infinity,
-            Time.unscaledDeltaTime);
+        displayedRatio = ratio;
 
-        flashThreshold = Mathf.Clamp01(
-            Mathf.Min(redStart, redlineRpm / maxRpm));
+        redline = telemetry.MaxRpm / CarTelemetry.TachometerScaleRpm;
+        redStart = Mathf.Clamp01(telemetry.PeakPowerRpm / CarTelemetry.TachometerScaleRpm);
 
         flashing = flashAtRedline &&
-                   ratio >= flashThreshold &&
+                   telemetry.Rpm >= telemetry.MaxRpm && telemetry.MaxRpm > 0f &&
                    Mathf.Sin(Time.unscaledTime * flashSpeed) > 0f;
 
         Color activeColor = GetRpmColor(ratio);
@@ -273,10 +260,10 @@ public class HudGauge : MaskableGraphic
 
             if (useGradient && flashing)
             {
-                if (t0 >= flashThreshold)
+                if (t0 >= redStart)
                     c0 = new Color(1f, 1f, 1f, opacity);
 
-                if (t1 >= flashThreshold)
+                if (t1 >= redStart)
                     c1 = new Color(1f, 1f, 1f, opacity);
             }
 
@@ -302,7 +289,7 @@ public class HudGauge : MaskableGraphic
         {
             return Color.Lerp(
                 amber, red,
-                Mathf.InverseLerp(redStart, 1f, ratio));
+                Mathf.InverseLerp(redStart, redline, ratio));
         }
 
         if (ratio >= amberStart)
@@ -386,7 +373,7 @@ public class HudGauge : MaskableGraphic
     private void BuildTexts()
     {
         rpmText = CreateText(
-            "RPMText", "RPM  0000  /  7000",
+            "RPMText", "RPM  ----",
             new Vector2(340f, 28f),
             new Vector2(0f, 107f),
             18f, muted);

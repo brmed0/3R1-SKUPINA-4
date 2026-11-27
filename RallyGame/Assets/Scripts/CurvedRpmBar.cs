@@ -20,7 +20,6 @@ public class CurvedRpmBar : MaskableGraphic
     [SerializeField] private float thickness = 11f;
     [SerializeField] private float startAngle = -135f;
     [SerializeField] private float sweepAngle = 270f;
-    [SerializeField] private float smoothTime = 0.045f;
 
     [Header("Text Layout")]
     [SerializeField] private float rpmTextY = 95f;
@@ -36,8 +35,6 @@ public class CurvedRpmBar : MaskableGraphic
 
     [Header("RPM Thresholds")]
     [SerializeField, Range(0f, 1f)] private float amberStart = 0.65f;
-    [SerializeField, Range(0f, 1f)] private float redStart = 0.88f;
-    [SerializeField] private float redlineRpm = 7000f;
     [SerializeField] private bool flashAtRedline = true;
     [SerializeField] private float flashSpeed = 14f;
 
@@ -65,7 +62,8 @@ public class CurvedRpmBar : MaskableGraphic
     [SerializeField, Range(0f, 0.5f)] private float glowOpacity = 0.14f;
 
     private float displayedRatio;
-    private float ratioVelocity;
+    private float redStart = 1f;
+    private float redline = 1f;
     private bool currentlyFlashing;
 
     private int lastSpeed = int.MinValue;
@@ -127,9 +125,6 @@ public class CurvedRpmBar : MaskableGraphic
             new Vector2(0f, unitTextY), unitFontSize, muted)
             .text = "KM/H";
 
-        displayedRatio = Mathf.Clamp01(
-            telemetry.Rpm / Mathf.Max(1f, telemetry.MaxRpm));
-
         UpdateHud(true);
         SetVerticesDirty();
     }
@@ -141,9 +136,8 @@ public class CurvedRpmBar : MaskableGraphic
 
     private void UpdateHud(bool force)
     {
-        float maxRpm = Mathf.Max(1f, telemetry.MaxRpm);
-        float rpm = Mathf.Clamp(telemetry.Rpm, 0f, maxRpm);
-        float ratio = Mathf.Clamp01(rpm / maxRpm);
+        float rpm = telemetry.IndicatedRpm;
+        float ratio = Mathf.Clamp01(rpm / CarTelemetry.TachometerScaleRpm);
 
         int speed = Mathf.Max(0, Mathf.RoundToInt(telemetry.SpeedKmh));
         int gear = telemetry.Gear;
@@ -169,22 +163,16 @@ public class CurvedRpmBar : MaskableGraphic
             lastRpm = roundedRpm;
 
             rpmText.text = "RPM  " + roundedRpm.ToString("0000")
-                + "  /  " + Mathf.RoundToInt(maxRpm).ToString("0000");
+                + "  /  " + Mathf.RoundToInt(CarTelemetry.TachometerScaleRpm).ToString("0000");
         }
 
-        displayedRatio = Mathf.SmoothDamp(
-            displayedRatio,
-            ratio,
-            ref ratioVelocity,
-            Mathf.Max(0.001f, smoothTime),
-            Mathf.Infinity,
-            Time.unscaledDeltaTime);
+        displayedRatio = ratio;
 
-        float redThreshold = Mathf.Clamp01(
-            Mathf.Min(redStart, redlineRpm / maxRpm));
+        redline = telemetry.MaxRpm / CarTelemetry.TachometerScaleRpm;
+        redStart = Mathf.Clamp01(telemetry.PeakPowerRpm / CarTelemetry.TachometerScaleRpm);
 
         currentlyFlashing = flashAtRedline &&
-            ratio >= redThreshold &&
+            telemetry.Rpm >= telemetry.MaxRpm && telemetry.MaxRpm > 0f &&
             Mathf.Sin(Time.unscaledTime * flashSpeed) > 0f;
 
         Color rpmColor = GetRpmColor(ratio);
@@ -301,7 +289,7 @@ public class CurvedRpmBar : MaskableGraphic
     {
         if (ratio >= redStart)
         {
-            float t = Mathf.InverseLerp(redStart, 1f, ratio);
+            float t = Mathf.InverseLerp(redStart, redline, ratio);
             return Color.Lerp(amber, red, t);
         }
 
